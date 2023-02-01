@@ -104,6 +104,10 @@ onUnmounted(() => clearRef.value())
 	overflow: hidden;
 }
 
+.ms-login:hover{
+  box-shadow: 2px 2px 24px rgba(99, 99, 99, 0.24);
+}
+
 .ms-content {
 	padding: 30px 30px;
 }
