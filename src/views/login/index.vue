@@ -2,26 +2,25 @@
 	<div class="login-wrap" id="form-bg">
 		<div class="ms-login">
 			<div class="ms-title">后台管理系统</div>
-			<el-form :model="param" :rules="rules" ref="login" label-width="0px" class="ms-content">
+			<el-form :model="loginInfo" label-width="0px" class="ms-content">
 				<el-form-item prop="username">
-					<el-input v-model="param.username" placeholder="username">
+					<el-input v-model="loginInfo.username" placeholder="username">
 						<template #prepend>
 							<el-button :icon="User"></el-button>
 						</template>
 					</el-input>
 				</el-form-item>
 				<el-form-item prop="password">
-					<el-input type="password" placeholder="password" v-model="param.password"
-						@keyup.enter="submitForm(login)">
+					<el-input type="password" placeholder="password" v-model="loginInfo.password"
+						@keyup.enter="submitForm">
 						<template #prepend>
 							<el-button :icon="Lock"></el-button>
 						</template>
 					</el-input>
 				</el-form-item>
 				<div class="login-btn">
-					<el-button type="primary" @click="submitForm(login)">登录</el-button>
+					<el-button type="primary" @click="submitForm">登录</el-button>
 				</div>
-
 			</el-form>
 		</div>
 	</div>
@@ -33,47 +32,31 @@ import { useTagsStore } from '../../store/tags';
 import { usePermissStore } from '../../store/permiss';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import type { FormInstance, FormRules } from 'element-plus';
 import { Lock, User } from '@element-plus/icons-vue';
+import { LoginInfo, loginApi } from '../../api/user';
 
-interface LoginInfo {
-	username: string;
-	password: string;
-}
 
-const router = useRouter();
-const param = reactive<LoginInfo>({
+const loginInfo = reactive<LoginInfo>({
 	username: 'admin',
 	password: '123123'
 });
 
-const rules: FormRules = {
-	username: [
-		{
-			required: true,
-			message: '请输入用户名',
-			trigger: 'blur'
-		}
-	],
-	password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-};
+const router = useRouter();
 const permiss = usePermissStore();
-const login = ref<FormInstance>();
-const submitForm = (formEl: FormInstance | undefined) => {
-	if (!formEl) return;
-	formEl.validate((valid: boolean) => {
-		if (valid) {
-			ElMessage.success('登录成功');
-			localStorage.setItem('ms_username', param.username);
-			const keys = permiss.defaultList[param.username == 'admin' ? 'admin' : 'user'];
-			permiss.handleSet(keys);
-			localStorage.setItem('ms_keys', JSON.stringify(keys));
-			router.push('/');
-		} else {
-			ElMessage.error('登录成功');
-			return false;
-		}
-	});
+
+const submitForm = () => {
+	if (!loginInfo.username || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
+	loginApi(loginInfo).then(() => {
+		ElMessage.success('登录成功');
+		localStorage.setItem('ms_username', loginInfo.username);
+		const keys = permiss.defaultList[loginInfo.username == 'admin' ? 'admin' : 'user'];
+		permiss.handleSet(keys);
+		localStorage.setItem('ms_keys', JSON.stringify(keys));
+		router.push('/');
+	}).catch(err => {
+		console.log(err)
+	})
+
 };
 
 const tags = useTagsStore();
@@ -83,13 +66,13 @@ tags.clearTags();
 const clearRef = ref()
 const setCanvasBg = () => {
 	// @ts-ignore
-	import("./plugins/webgl04.js").then(({ drawCanvas, clearFunc }) => {
+	import("./plugins/canvas10.js").then(({ drawCanvas, clearFunc }) => {
 		clearRef.value = clearFunc
 		drawCanvas("form-bg")
 	})
 }
-// onMounted(setCanvasBg)
-// onUnmounted(() => clearRef.value())
+onMounted(setCanvasBg)
+onUnmounted(() => clearRef.value())
 
 </script>
 
@@ -117,7 +100,7 @@ const setCanvasBg = () => {
 	width: 350px;
 	margin: -190px 0 0 -175px;
 	border-radius: 5px;
-	background: rgba(255, 255, 255, 0.3);
+	background: rgba(99, 99, 99, 0.9);
 	overflow: hidden;
 }
 
