@@ -28,32 +28,23 @@ const routes: RouteRecordRaw[] = [
                     title: '表格',
                     permiss: '2',
                 },
-                component: () => import(/* webpackChunkName: "table" */ '../views/table.vue'),
+                component: () => import(/* webpackChunkName: "table" */ '../views/table/table.vue'),
             },
             {
                 path: '/form',
                 name: 'baseform',
                 meta: {
                     title: '表单',
-                    permiss: '5',
-                },
-                component: () => import(/* webpackChunkName: "form" */ '../views/form.vue'),
-            },
-            {
-                path: '/tabs',
-                name: 'tabs',
-                meta: {
-                    title: 'tab标签',
                     permiss: '3',
                 },
-                component: () => import(/* webpackChunkName: "tabs" */ '../views/tabs.vue'),
+                component: () => import(/* webpackChunkName: "form" */ '../views/form/form.vue'),
             },
             {
                 path: '/permission',
                 name: 'permission',
                 meta: {
                     title: '权限管理',
-                    permiss: '13',
+                    permiss: '5',
                 },
                 component: () => import(/* webpackChunkName: "permission" */ '../views/permission.vue'),
             },
@@ -62,44 +53,36 @@ const routes: RouteRecordRaw[] = [
                 name: 'upload',
                 meta: {
                     title: '上传插件',
-                    permiss: '6',
+                    permiss: '2',
                 },
-                component: () => import(/* webpackChunkName: "upload" */ '../views/upload.vue'),
+                component: () => import(/* webpackChunkName: "upload" */ '../views/form/upload.vue'),
             },
             {
                 path: '/icon',
                 name: 'icon',
                 meta: {
                     title: '自定义图标',
-                    permiss: '10',
+                    permiss: '4',
                 },
                 component: () => import(/* webpackChunkName: "icon" */ '../views/icon.vue'),
             },
-            // {
-            //     path: '/user',
-            //     name: 'user',
-            //     meta: {
-            //         title: '个人中心',
-            //     },
-            //     component: () => import(/* webpackChunkName: "user" */ '../views/user.vue'),
-            // },
             {
                 path: '/editor',
                 name: 'editor',
                 meta: {
                     title: '富文本编辑器',
-                    permiss: '8',
+                    permiss: '3',
                 },
-                component: () => import(/* webpackChunkName: "editor" */ '../views/editor.vue'),
+                component: () => import(/* webpackChunkName: "editor" */ '../views/table/editor.vue'),
             },
             {
                 path: '/markdown',
                 name: 'markdown',
                 meta: {
                     title: 'markdown编辑器',
-                    permiss: '9',
+                    permiss: '3',
                 },
-                component: () => import(/* webpackChunkName: "markdown" */ '../views/markdown.vue'),
+                component: () => import(/* webpackChunkName: "markdown" */ '../views/table/markdown.vue'),
             },
             {
                 path: '/export',
@@ -108,7 +91,7 @@ const routes: RouteRecordRaw[] = [
                     title: '导出Excel',
                     permiss: '2',
                 },
-                component: () => import(/* webpackChunkName: "export" */ '../views/export.vue'),
+                component: () => import(/* webpackChunkName: "export" */ '../views/table/export.vue'),
             },
             {
                 path: '/import',
@@ -117,7 +100,7 @@ const routes: RouteRecordRaw[] = [
                     title: '导入Excel',
                     permiss: '2',
                 },
-                component: () => import(/* webpackChunkName: "import" */ '../views/import.vue'),
+                component: () => import(/* webpackChunkName: "import" */ '../views/table/import.vue'),
             },
         ],
     },

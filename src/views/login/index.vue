@@ -49,11 +49,12 @@ const submitForm = () => {
 	loginApi(loginInfo).then(() => {
 		ElMessage.success('登录成功');
 		localStorage.setItem('ms_username', loginInfo.username);
-		const keys = permiss.defaultList[loginInfo.username == 'admin' ? 'admin' : 'user'];
+		const keys = permiss.defaultList[loginInfo.username === 'admin' ? 'admin' : 'user'];
 		permiss.handleSet(keys);
 		localStorage.setItem('ms_keys', JSON.stringify(keys));
 		router.push('/');
 	}).catch(err => {
+		ElMessage.error('登录失败');
 		console.log(err)
 	})
 
@@ -104,8 +105,8 @@ onUnmounted(() => clearRef.value())
 	overflow: hidden;
 }
 
-.ms-login:hover{
-  box-shadow: 2px 2px 24px rgba(99, 99, 99, 0.24);
+.ms-login:hover {
+	box-shadow: 2px 2px 24px rgba(99, 99, 99, 0.24);
 }
 
 .ms-content {
