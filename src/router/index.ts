@@ -67,24 +67,6 @@ const routes: RouteRecordRaw[] = [
                 component: () => import(/* webpackChunkName: "icon" */ '../views/icon.vue'),
             },
             {
-                path: '/editor',
-                name: 'editor',
-                meta: {
-                    title: '富文本编辑器',
-                    permiss: '3',
-                },
-                component: () => import(/* webpackChunkName: "editor" */ '../views/table/editor.vue'),
-            },
-            {
-                path: '/markdown',
-                name: 'markdown',
-                meta: {
-                    title: 'markdown编辑器',
-                    permiss: '3',
-                },
-                component: () => import(/* webpackChunkName: "markdown" */ '../views/table/markdown.vue'),
-            },
-            {
                 path: '/export',
                 name: 'export',
                 meta: {

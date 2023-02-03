@@ -37,7 +37,7 @@ import { LoginInfo, loginApi } from '../../api/user';
 
 
 const loginInfo = reactive<LoginInfo>({
-	username: 'admin',
+	username: 'user',
 	password: '123123'
 });
 

@@ -69,20 +69,6 @@ const data: Tree[] = [
 			{
 				id: '3-2',
 				label: '文件上传'
-			},
-			{
-				id: '3-3',
-				label: '三级菜单',
-				children: [
-					{
-						id: '3-3-1',
-						label: '富文本编辑器'
-					},
-					{
-						id: '3-3-2',
-						label: 'markdown编辑器'
-					}
-				]
 			}
 		]
 	},

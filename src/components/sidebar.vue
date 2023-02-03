@@ -12,14 +12,8 @@
                             <span>{{ item.title }}</span>
                         </template>
                         <template v-for="subItem in item.subs">
-                            <el-sub-menu v-if="subItem.subs" :index="subItem.index" :key="subItem.index"
-                                v-permiss="item.permiss">
-                                <template #title>{{ subItem.title }}</template>
-                                <el-menu-item v-for="(threeItem, i) in subItem.subs" :key="i" :index="threeItem.index">
-                                    {{ threeItem.title }}
-                                </el-menu-item>
-                            </el-sub-menu>
-                            <el-menu-item v-else :index="subItem.index" v-permiss="item.permiss">
+                            
+                            <el-menu-item :index="subItem.index" v-permiss="item.permiss">
                                 {{ subItem.title }}
                             </el-menu-item>
                         </template>
@@ -88,23 +82,6 @@ const items = [
                 index: '/upload',
                 title: '文件上传',
                 permiss: '3',
-            },
-            {
-                index: '4',
-                title: '三级菜单',
-                permiss: '3',
-                subs: [
-                    {
-                        index: '/editor',
-                        title: '富文本编辑器',
-                        permiss: '3',
-                    },
-                    {
-                        index: '/markdown',
-                        title: 'markdown编辑器',
-                        permiss: '3',
-                    },
-                ],
             },
         ],
     },
