@@ -16,13 +16,6 @@
         <el-table-column label="账户余额">
           <template #default="scope">￥{{ scope.row.money }}</template>
         </el-table-column>
-        <el-table-column label="头像(查看大图)" align="center">
-          <template #default="scope">
-            <el-image class="table-td-thumb" :src="scope.row.thumb" :z-index="10" :preview-src-list="[scope.row.thumb]"
-              preview-teleported>
-            </el-image>
-          </template>
-        </el-table-column>
         <el-table-column prop="address" label="地址"></el-table-column>
         <el-table-column label="状态" align="center">
           <template #default="scope">
@@ -33,12 +26,12 @@
         </el-table-column>
 
         <el-table-column prop="date" label="注册时间"></el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="220" align="center" v-if="canOperate">
           <template #default="scope">
-            <el-button text :icon="Edit" @click="handleEdit(scope.$index, scope.row)" v-permiss="15">
+            <el-button text :icon="Edit" @click="handleEdit(scope.$index, scope.row)">
               编辑
             </el-button>
-            <el-button text :icon="Delete" class="red" @click="handleDelete(scope.$index)" v-permiss="16">
+            <el-button text :icon="Delete" class="red" @click="handleDelete(scope.$index)">
               删除
             </el-button>
           </template>
@@ -71,20 +64,22 @@
 </template>
 
 <script setup lang="ts" name="basetable">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Delete, Edit, Search, Plus } from '@element-plus/icons-vue';
+import { usePermissStore } from '../../store/permiss';
 
 interface TableItem {
   id: number;
   name: string;
-  money: string;
+  money: number;
   state: string;
   date: string;
   address: string;
-  thumb?: string
 }
 
+const permiss = usePermissStore()
+const canOperate = computed(() => JSON.stringify(permiss.key) === JSON.stringify(permiss.defaultList.admin))
 const query = reactive({
   address: '',
   name: '',
@@ -96,14 +91,14 @@ const pageTotal = ref(0);
 // 获取表格数据
 const getData = () => {
   const res = {
-    "list": [{
+    list: [{
       "id": 1,
       "name": "张三",
       "money": 123,
       "address": "广东省东莞市长安镇",
       "state": "成功",
       "date": "2019-11-1",
-      "thumb": "https://lin-xin.gitee.io/images/post/wms.png"
+
     },
     {
       "id": 2,
@@ -112,7 +107,6 @@ const getData = () => {
       "address": "广东省广州市白云区",
       "state": "成功",
       "date": "2019-10-11",
-      "thumb": "https://lin-xin.gitee.io/images/post/node3.png"
     },
     {
       "id": 3,
@@ -121,7 +115,6 @@ const getData = () => {
       "address": "湖南省长沙市",
       "state": "失败",
       "date": "2019-11-11",
-      "thumb": "https://lin-xin.gitee.io/images/post/parcel.png"
     },
     {
       "id": 4,
@@ -130,9 +123,8 @@ const getData = () => {
       "address": "福建省厦门市鼓浪屿",
       "state": "成功",
       "date": "2019-10-20",
-      "thumb": "https://lin-xin.gitee.io/images/post/notice.png"
     }],
-    "pageTotal": 4
+    pageTotal: 4
   }
   tableData.value = res.list;
   pageTotal.value = res.pageTotal || 50;
@@ -209,12 +201,5 @@ const saveEdit = () => {
 
 .mr10 {
   margin-right: 10px;
-}
-
-.table-td-thumb {
-  display: block;
-  margin: auto;
-  width: 40px;
-  height: 40px;
 }
 </style>

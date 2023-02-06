@@ -1,7 +1,7 @@
 import request from '../utils/request';
 
 export interface LoginInfo {
-    username: string;
+    userName: string;
     password: string;
 }
 export const loginApi = (loginInfo: LoginInfo) => {

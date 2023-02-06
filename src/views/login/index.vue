@@ -4,7 +4,7 @@
 			<div class="ms-title">后台管理系统</div>
 			<el-form :model="loginInfo" label-width="0px" class="ms-content">
 				<el-form-item prop="username">
-					<el-input v-model="loginInfo.username" placeholder="username">
+					<el-input v-model="loginInfo.userName" placeholder="username">
 						<template #prepend>
 							<el-button :icon="User"></el-button>
 						</template>
@@ -37,19 +37,19 @@ import { LoginInfo, loginApi } from '../../api/user';
 
 
 const loginInfo = reactive<LoginInfo>({
-	username: 'user',
-	password: '123123'
+	userName: 'root',
+	password: '123456'
 });
 
 const router = useRouter();
 const permiss = usePermissStore();
 
 const submitForm = () => {
-	if (!loginInfo.username || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
+	if (!loginInfo.userName || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
 	loginApi(loginInfo).then(() => {
 		ElMessage.success('登录成功');
-		localStorage.setItem('ms_username', loginInfo.username);
-		const keys = permiss.defaultList[loginInfo.username === 'admin' ? 'admin' : 'user'];
+		localStorage.setItem('ms_username', loginInfo.userName);
+		const keys = permiss.defaultList[loginInfo.userName === 'root' ? 'admin' : 'user'];
 		permiss.handleSet(keys);
 		localStorage.setItem('ms_keys', JSON.stringify(keys));
 		router.push('/');
