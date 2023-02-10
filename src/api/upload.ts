@@ -1,9 +1,12 @@
 import request from '../utils/request';
 
-export const uploadApi = (formdata: any) => {
+export const uploadApi = (formData: any) => {
   return request({
-    url: '/upload',
+    url: '/file/upload',
     method: 'post',
-    data: { ...formdata }
+    data: formData,
+    headers: {
+      'content-type': 'multipart/form-data'
+    }
   });
 };

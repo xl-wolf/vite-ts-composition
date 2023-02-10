@@ -46,7 +46,7 @@ const data: Tree[] = [
 		children: [
 			{
 				id: '2-1',
-				label: '常用表格'
+				label: '基础表格'
 			},
 			{
 				id: '2-2',

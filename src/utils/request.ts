@@ -4,8 +4,8 @@ import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
 const loadingContainer = document.body
 
 const service: AxiosInstance = axios.create({
-    // baseURL: 'http://47.96.135.81:9090/', // url = base url + request url
-    baseURL: 'http://localhost:6067',//'http://47.96.135.81:9090/', // url = base url + request url
+    baseURL: 'http://47.96.135.81:9090/', // url = base url + request url
+    // baseURL: 'http://localhost:6067',//'http://47.96.135.81:9090/', // url = base url + request url
     timeout: 20000, // request timeout
 })
 
