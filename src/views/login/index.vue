@@ -36,7 +36,7 @@ import { LoginInfo, loginApi } from '../../api/user';
 
 
 const loginInfo = reactive<LoginInfo>({
-  userName: 'hq',
+  userName: 'root',
   password: '123456'
 });
 
@@ -51,7 +51,7 @@ const submitForm = () => {
     const keys = permiss.defaultList[loginInfo.userName === 'root' ? 'admin' : 'user'];
     permiss.handleSet(keys);
     localStorage.setItem('ms_keys', JSON.stringify(keys));
-    router.push(res.data ? '/' : '/upload');
+    router.push(res.data.success ? '/' : '/upload');
   }).catch(err => {
     ElMessage.error('登录失败');
     console.log(err)

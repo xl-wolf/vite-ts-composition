@@ -6,9 +6,10 @@
           :http-request="httpRequest" ref='uploadRef' :on-success="handleSuccess">
           <el-button class="mr10" type="success">批量导入</el-button>
         </el-upload>
-        <el-button type="primary" @click="exportXlsx">导出Excel</el-button>
+        <el-button type="primary" :disabled="!candownload" @click="exportXlsx">导出Excel</el-button>
+        <el-button type="primary" :disabled="!cangentable" @click="renderTable(resList)">生成表格</el-button>
       </div>
-      <el-table :data="tableData" border stripe class="table" show-overflow-tooltip height="600">
+      <el-table :data="tableData" border stripe class="table" show-overflow-tooltip height="400">
         <el-table-column :prop="column.prop" :label="column.label" v-for="column in columnFiledList"
           :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
       </el-table>
@@ -71,6 +72,10 @@ const tableData = ref<TableItem[]>([]);
 
 const importList = ref<any>([]);
 const beforeUpload: UploadProps['beforeUpload'] = async (rawFile) => {
+  if (rawFile.size / 1024 / 1024 > 2) {
+    ElMessage.warning('表格大小不能超过2MB！')
+    return false
+  }
   importList.value = await analysisExcel(rawFile);
   return true;
 };
@@ -80,8 +85,6 @@ const analysisExcel = (file: any) => {
     reader.onload = function (e: any) {
       const data = e.target.result;
       const datajson = XLSX.read(data, { type: 'binary' });
-      console.log(datajson)
-
       const sheetName = datajson.SheetNames[0];
       const result = XLSX.utils.sheet_to_json(datajson.Sheets[sheetName]);
       resolve(result);
@@ -90,9 +93,19 @@ const analysisExcel = (file: any) => {
   });
 };
 
+const uploadedFileType: string[] = []
+// 上层变量保存各类型单据的数据
+const tempysj: { [key: string]: any } = {}
+const tempfkd: { [key: string]: any } = {}
+const tempskd: { [key: string]: any } = {}
+const tempshd: { [key: string]: any } = {}
+const resList = ref<any>([])
+const cangentable = ref(false)
 const httpRequest = async () => {
   // 把数据传给服务器后获取最新列表，这里只是示例，不做请求
+  if (importList.value.length > 500) return ElMessage.warning('表格数据不得多于500条')
   let ordertype = ''
+
   const list = importList.value.map((item: any, index: number) => {
     if (item['应付金额'] === 0 || item['应付金额']) {
       ordertype = '付款单'
@@ -138,86 +151,130 @@ const httpRequest = async () => {
         shouldgetfee: item['应收金额'],
         salecanalrefund: item['售后渠道退款金额'],
         salerepositoryrefund: item['售后仓库退款金额'],
-        profit: item['应收金额'] - item['应付金额'] - item['售后渠道退款金额'] + item['售后仓库退款金额'],
+        profit: NaN
+        // profit: item['应收金额'] - item['应付金额'] - item['售后渠道退款金额'] + item['售后仓库退款金额'],
       };
     }
   });
+  uploadedFileType.push(ordertype)
   console.log(ordertype + ':', list)
-  const tmp: { [key: string]: any } = {}
+
   list.forEach((item: any) => {
     if (!item.orderNO) ElMessage.warning('存在没有订单编号的数据')
 
     if (item.shouldpayfee === 0 || item.shouldpayfee) {
-      if (!tmp[item.orderNO]) {
-        tmp[item.orderNO] = item.shouldpayfee
+      if (!tempfkd[item.orderNO]) {
+        tempfkd[item.orderNO] = item.shouldpayfee
       } else {
-        tmp[item.orderNO] = [tmp[item.orderNO]].concat(item.shouldpayfee)
-        ElMessage.warning(`订单编号为${item.orderNO}的数据存在重复`)
+        tempfkd[item.orderNO] = [tempfkd[item.orderNO]].concat(item.shouldpayfee)
+        ElMessage.warning(`订单编号为${tempfkd.orderNO}的付款单数据存在重复`)
       }
     }
     else if (item.shouldgetfee === 0 || (item.shouldgetfee)) {
-      if (!tmp[item.orderNO]) {
-        tmp[item.orderNO] = item.shouldgetfee
+      if (!tempskd[item.orderNO]) {
+        tempskd[item.orderNO] = item.shouldgetfee
       } else {
-        tmp[item.orderNO] = [tmp[item.orderNO]].concat(item.shouldgetfee)
-        ElMessage.warning(`订单编号为${item.orderNO}的数据存在重复`)
+        tempskd[item.orderNO] = [tempskd[item.orderNO]].concat(item.shouldgetfee)
+        ElMessage.warning(`订单编号为${item.orderNO}的收款单数据存在重复`)
       }
     }
     else if ((item.salecanalrefund === 0 || item.salecanalrefund) && (item.salerepositoryrefund === 0 || item.salerepositoryrefund)) {
-      if (!tmp[item.orderNO]) {
-        tmp[item.orderNO] = `售后渠道退款金额:${item.salecanalrefund}售后仓库退款金额:${item.salerepositoryrefund}`
+      if (!tempshd[item.orderNO]) {
+        tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
       } else {
-        tmp[item.orderNO] = [tmp[item.orderNO]].concat(`售后渠道退款金额:${item.salecanalrefund}售后仓库退款金额:${item.salerepositoryrefund}`)
-        ElMessage.warning(`订单编号为${item.orderNO}的数据存在重复`)
+        tempshd[item.orderNO] = [tempshd[item.orderNO]].concat(`售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`)
+        ElMessage.warning(`订单编号为${item.orderNO}的售后单数据存在重复`)
       }
     }
     else {
-      if (!tmp[item.orderNO]) {
-        tmp[item.orderNO] = item
+      if (!tempysj[item.orderNO]) {
+        tempysj[item.orderNO] = item
       } else {
-        tmp[item.orderNO] = [tmp[item.orderNO]].concat(item)
-        ElMessage.warning(`订单编号为${item.orderNO}的数据存在重复`)
+        tempysj[item.orderNO] = [tempysj[item.orderNO]].concat(item)
+        ElMessage.warning(`订单编号为${item.orderNO}的源数据单数据存在重复`)
       }
     }
   });
-  console.log(tmp, 'tmp')
-  // tableData.value.push(...list);
-  // console.log(tableData.value)
+  // if (Array.from(new Set(uploadedFileType)).length !== 4) return ElMessage.error('表单类型未上传完整，无法使用！')
+  const tmpresList: any[] = []
+  Object.values(tempysj).forEach(item => {
+    const shouldpayfee = tempfkd[item.orderNO]
+    const shouldgetfee = tempskd[item.orderNO]
+    const salecanalrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[0].slice(8) : tempshd[item.orderNO]
+    const salerepositoryrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[1] : tempshd[item.orderNO]
+    item = {
+      ...item,
+      ...{ shouldpayfee },
+      ...{ shouldgetfee },
+      ...{ salecanalrefund },
+      ...{ salerepositoryrefund },
+      ...{ profit: shouldgetfee - shouldpayfee - salecanalrefund + salerepositoryrefund },
+    }
+    tmpresList.push(item)
+  })
+  console.log(tempysj, 'tempysj')
+  console.log(tempfkd, 'tempfkd')
+  console.log(tempskd, 'tempskd')
+  console.log(tempshd, 'tempshd')
+  console.log(tmpresList, 'tmpresList')
+  cangentable.value = Array.from(new Set(uploadedFileType)).length === 4
+  resList.value = tmpresList
 };
+
+// 大数据情况下模拟分页加载
+const candownload = ref(false)
+let start = 0;
+let offset = 15;
+const renderTable = (list: any[]) => {
+  const timer = setTimeout(() => {
+    tableData.value = tableData.value.concat(list.slice(start, start + offset))
+    start += offset
+    if (tableData.value.length >= list.length) {
+      ElMessage.success('表格渲染完毕！')
+      candownload.value = uploadedFileType.length === 4
+      clearTimeout(timer)
+      start = 0;
+      offset = 15;
+    } else {
+      renderTable(list)
+    }
+  }, 200);
+}
 
 const uploadRef = ref<UploadInstance>()
 const handleSuccess = () => uploadRef.value!.clearFiles(); //上传成功之后清除历史记录
 
 
-const list = [
-  [
-    '序号',
-    '订单编号',
-    '商品名称',
-    '商品数量',
-    '渠道',
-    '成本单价',
-    '成本（成本价X数量+供应商运费）',
-    '渠道价格',
-    '销售金额（供货价X数量+运费）',
-    '下单时间',
-    '收件人',
-    '收件人电话',
-    '收件人地址',
-    '发货状态',
-    '订单状态',
-    '应付金额',
-    '应收金额',
-    '售后渠道退款金额',
-    '售后仓库退款金额',
-    '利润',
-  ]
-];
 const exportXlsx = () => {
-  tableData.value.map((item: TableItem, i: number) => {
+  if (!uploadedFileType.includes('源数据')) return ElMessage.error('请先上传源数据，否则无法使用功能下载')
+
+  const downloadList = [
+    [
+      '订单编号',
+      '商品名称',
+      '商品数量',
+      '渠道',
+      '成本单价',
+      '成本（成本价X数量+供应商运费）',
+      '渠道价格',
+      '销售金额（供货价X数量+运费）',
+      '下单时间',
+      '收件人',
+      '收件人电话',
+      '收件人地址',
+      '发货状态',
+      '订单状态',
+      '应付金额',
+      '应收金额',
+      '售后渠道退款金额',
+      '售后仓库退款金额',
+      '利润',
+    ]
+  ];
+
+  tableData.value.forEach((item: TableItem) => {
     const arr: any[] = [];
     arr.push(...[
-      item.number,
       item.orderNO,
       item.name,
       item.count,
@@ -238,10 +295,12 @@ const exportXlsx = () => {
       item.salerepositoryrefund,
       item.profit,
     ]);
-    list.push(arr);
+    downloadList.push(arr);
   });
-  const WorkSheet = XLSX.utils.aoa_to_sheet(list);
+
+  const WorkSheet = XLSX.utils.aoa_to_sheet(downloadList);
   const new_workbook = XLSX.utils.book_new();
+  console.log(new_workbook, 'new_workbook')
   XLSX.utils.book_append_sheet(new_workbook, WorkSheet, '第一页');
   XLSX.writeFile(new_workbook, `表格.xlsx`);
 };
@@ -257,13 +316,6 @@ const exportXlsx = () => {
   width: 100%;
   font-size: 14px;
 }
-
-// /deep/.el-table .cell {
-//   max-width: 240px !important;
-//   white-space: nowrap !important;
-//   overflow: hidden !important;
-//   text-overflow: ellipsis !important;
-// }
 
 .mr10 {
   margin-right: 10px;
