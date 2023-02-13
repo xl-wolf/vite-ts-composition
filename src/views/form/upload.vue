@@ -262,6 +262,7 @@ const handleSuccess = () => uploadRef.value!.clearFiles(); //上传成功之后�
 
 const candownload = ref(false)
 const exportXlsx = () => {
+  if (geningtable.value) return ElMessage.success('正在努力生成表格，请稍后！')
   if (!candownload.value) return ElMessage.error('请先生成表格！')
   if (!uploadedFileType.includes('源数据')) return ElMessage.error('请先上传源数据，否则无法使用功能下载')
 
