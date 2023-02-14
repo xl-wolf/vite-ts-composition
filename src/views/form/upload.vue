@@ -39,6 +39,8 @@ import { ElButton, ElIcon, ElMessage, ElPopover, ElTable, ElTableColumn, ElUploa
 import { UploadFilled } from '@element-plus/icons-vue';
 import { nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
+// @ts-ignore
+import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
 
 const columnFiledList: { [key: string]: string }[] = [
   { prop: 'number', label: '序号' },
@@ -189,28 +191,33 @@ const httpRequest = async () => {
   list.forEach((item: any) => {
     if (item.shouldpayfee === 0 || item.shouldpayfee) {
       if (!tempfkd[item.orderNO]) {
-        tempfkd[item.orderNO] = item.shouldpayfee
+        if (item.orderNO)
+          tempfkd[item.orderNO] = item.shouldpayfee
       } else {
         duplicateOrderList.value.push({ '付款单': item.orderNO })
       }
     }
     else if (item.shouldgetfee === 0 || (item.shouldgetfee)) {
       if (!tempskd[item.orderNO]) {
-        tempskd[item.orderNO] = item.shouldgetfee
+        if (item.orderNO)
+          if (item.orderNO)
+            tempskd[item.orderNO] = item.shouldgetfee
       } else {
         duplicateOrderList.value.push({ '收款单': item.orderNO })
       }
     }
     else if ((item.salecanalrefund === 0 || item.salecanalrefund) && (item.salerepositoryrefund === 0 || item.salerepositoryrefund)) {
       if (!tempshd[item.orderNO]) {
-        tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
+        if (item.orderNO)
+          tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
       } else {
         duplicateOrderList.value.push({ '售后单': item.orderNO })
       }
     }
     else {
       if (!tempysj[item.orderNO]) {
-        tempysj[item.orderNO] = item
+        if (item.orderNO)
+          tempysj[item.orderNO] = item
       } else {
         duplicateOrderList.value.push({ '源数据': item.orderNO })
       }
@@ -244,7 +251,7 @@ const httpRequest = async () => {
     })
     duplicateOrderList.value.forEach((duplicateOrder: any) => tmpresList.push({ orderNO: Object.values(duplicateOrder)[0] }))
     // console.log(tmpresList, 'tmpresList')
-    tmpresList.sort((a, b) => (a.orderNO.slice(1) - b.orderNO.slice(1)))
+    tmpresList.sort((a, b) => a.orderNO.slice(1) - b.orderNO.slice(1))
     tmpresList.forEach((item, index) => item.number = index + 1)
     resList.value = tmpresList
     cangentable.value = true
@@ -255,21 +262,24 @@ const httpRequest = async () => {
 const cangentable = ref(false)
 const geningtable = ref(false)
 let start = 0;
-let offset = 20;
+let offset = 30;
+const loadingContainer = document.body
 const renderTable = (list: any[]) => {
   if (!cangentable.value) return ElMessage.error('请先上传所有类型的表格！')
+  showLoading(loadingContainer, ['#409eff', '#409eff', '#409eff', '#409eff'])
   geningtable.value = true
   const timer = setTimeout(() => {
     tableData.value = tableData.value.concat(list.slice(start, start + offset))
     start += offset
     if (tableData.value.length >= list.length) {
       ElMessage.success('表格渲染完毕！')
+      hideLoading(loadingContainer)
       // console.log(tableData.value, 'tableData.value')
       geningtable.value = false
       candownload.value = Array.from(new Set(uploadedFileType)).length === 4
       clearTimeout(timer)
       start = 0;
-      offset = 20;
+      offset = 30;
     } else {
       renderTable(list)
     }
