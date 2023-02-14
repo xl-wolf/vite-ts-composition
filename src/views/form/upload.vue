@@ -25,7 +25,7 @@
           </template>
         </el-popover>
       </div>
-      <el-table :data="tableData" border stripe class="table" max-height="550">
+      <el-table :data="tableData" border stripe class="table" max-height="550" :span-method="spanMethod">
         <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
           tooltip-effect="dark" v-for="column in columnFiledList"
           :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts" name="import">
-import { ElMessage, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
+import { ElButton, ElIcon, ElMessage, ElPopover, ElTable, ElTableColumn, ElUpload, TableColumnCtx, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
-import { nextTick, onMounted, ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
 
 const columnFiledList: { [key: string]: string }[] = [
@@ -85,6 +85,32 @@ interface TableItem {
   salerepositoryrefund: string
   profit: string,
 }
+interface SpanMethodProps {
+  row: TableItem
+  column: TableColumnCtx<TableItem>
+  rowIndex: number
+  columnIndex: number
+}
+const spanMethod = ({
+  row,
+  column,
+  rowIndex,
+  columnIndex,
+}: SpanMethodProps) => {
+  if (columnIndex === 0 || columnIndex === 1) {
+    if (row.shouldpayfee) {
+      return {
+        rowspan: Math.max(row.shouldpayfee.length,row.shouldpayfee.length),
+        colspan: 1,
+      }
+    } else {
+      return {
+        rowspan: 1,
+        colspan: 1,
+      }
+    }
+  }
+}
 
 const tableData = ref<TableItem[]>([]);
 
@@ -130,6 +156,7 @@ const tempfkd: { [key: string]: any } = {}
 const tempskd: { [key: string]: any } = {}
 const tempshd: { [key: string]: any } = {}
 const resList = ref<any>([])
+const duplicateOrderList = ref<any>([])
 const httpRequest = async () => {
   // 把数据传给服务器后获取最新列表，这里只是示例，不做请求
   if (importList.value.length > 800) return ElMessage.warning('表格数据不得多于800条')
@@ -186,41 +213,52 @@ const httpRequest = async () => {
     }
   });
   uploadedFileType.push(ordertype)
-  console.log(ordertype + ':', list)
+  // console.log(ordertype + ':', list)
 
   list.forEach((item: any) => {
-    if (!item.orderNO) ElMessage.warning('存在没有订单编号的数据')
-
     if (item.shouldpayfee === 0 || item.shouldpayfee) {
       if (!tempfkd[item.orderNO]) {
         tempfkd[item.orderNO] = item.shouldpayfee
       } else {
-        tempfkd[item.orderNO] = [tempfkd[item.orderNO]].concat(item.shouldpayfee)
-        ElMessage.warning(`订单编号为${tempfkd.orderNO}的付款单数据存在重复`)
+        const temp = Array.isArray(tempfkd[item.orderNO]) ? [...tempfkd[item.orderNO]] : [tempfkd[item.orderNO]]
+        tempfkd[item.orderNO] = temp.concat(item.shouldpayfee)
+        console.log(tempfkd[item.orderNO], 'tempfkd[item.orderNO]')
+        duplicateOrderList.value.push({ '付款单': item.orderNO })
+        // console.log(`订单编号为${tempfkd.orderNO}的付款单数据存在重复`)
+        // ElMessage.warning(`订单编号为${tempfkd.orderNO}的付款单数据存在重复`)
       }
     }
     else if (item.shouldgetfee === 0 || (item.shouldgetfee)) {
       if (!tempskd[item.orderNO]) {
         tempskd[item.orderNO] = item.shouldgetfee
       } else {
-        tempskd[item.orderNO] = [tempskd[item.orderNO]].concat(item.shouldgetfee)
-        ElMessage.warning(`订单编号为${item.orderNO}的收款单数据存在重复`)
+        const temp = Array.isArray(tempskd[item.orderNO]) ? [...tempskd[item.orderNO]] : [tempskd[item.orderNO]]
+        tempskd[item.orderNO] = temp.concat(item.shouldgetfee)
+        duplicateOrderList.value.push({ '收款单': item.orderNO })
+        // console.log(`订单编号为${item.orderNO}的收款单数据存在重复`)
+        // ElMessage.warning(`订单编号为${item.orderNO}的收款单数据存在重复`)
       }
     }
     else if ((item.salecanalrefund === 0 || item.salecanalrefund) && (item.salerepositoryrefund === 0 || item.salerepositoryrefund)) {
       if (!tempshd[item.orderNO]) {
         tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
       } else {
-        tempshd[item.orderNO] = [tempshd[item.orderNO]].concat(`售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`)
-        ElMessage.warning(`订单编号为${item.orderNO}的售后单数据存在重复`)
+        const temp = Array.isArray(tempshd[item.orderNO]) ? [...tempshd[item.orderNO]] : [tempshd[item.orderNO]]
+        tempshd[item.orderNO] = temp.concat(`售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`)
+        // ElMessage.warning(`订单编号为${item.orderNO}的售后单数据存在重复`)
+        // console.log(`订单编号为${item.orderNO}的售后单数据存在重复`)
+        duplicateOrderList.value.push({ '售后单': item.orderNO })
       }
     }
     else {
       if (!tempysj[item.orderNO]) {
         tempysj[item.orderNO] = item
       } else {
-        tempysj[item.orderNO] = [tempysj[item.orderNO]].concat(item)
-        ElMessage.warning(`订单编号为${item.orderNO}的源数据单数据存在重复`)
+        const temp = Array.isArray(tempysj[item.orderNO]) ? [...tempysj[item.orderNO]] : [tempysj[item.orderNO]]
+        tempysj[item.orderNO] = temp.concat(item)
+        // console.log(`订单编号为${item.orderNO}的源数据单数据存在重复`)
+        // ElMessage.warning(`订单编号为${item.orderNO}的源数据单数据存在重复`)
+        duplicateOrderList.value.push({ '源数据': item.orderNO })
       }
     }
   });
@@ -229,6 +267,7 @@ const httpRequest = async () => {
   console.log(tempfkd, 'tempfkd')
   console.log(tempskd, 'tempskd')
   console.log(tempshd, 'tempshd')
+  console.log(duplicateOrderList.value, 'duplicateOrderList.value')
 
   ElMessage.success(`上传${ordertype}成功`)
   // 全部表单都上传之后才可以允许生成表格
@@ -268,6 +307,7 @@ const renderTable = (list: any[]) => {
     start += offset
     if (tableData.value.length >= list.length) {
       ElMessage.success('表格渲染完毕！')
+      console.log(tableData.value, 'tableData.value')
       geningtable.value = false
       candownload.value = Array.from(new Set(uploadedFileType)).length === 4
       clearTimeout(timer)
