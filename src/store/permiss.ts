@@ -4,10 +4,10 @@ import { pagePermission } from '../permissionConfig';
 interface ObjectList {
   [key: string]: string[];
 }
-export const adminList = pagePermission.map(pagecfg => pagecfg.permiss)
+const adminList = pagePermission.map(pagecfg => pagecfg.permiss)
 // 没权限的页面需要设成空字符串方便设置权限
 const userPermissConfig = ['文件上传']
-export const userList = adminList.map(permiss => {
+const userList = adminList.map(permiss => {
   if (userPermissConfig.indexOf(permiss) === -1) { return '' }
   return permiss
 })
