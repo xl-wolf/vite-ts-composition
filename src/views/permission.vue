@@ -75,7 +75,13 @@ getPremission();
 const tree = ref<InstanceType<typeof ElTree>>();
 const onSubmit = () => {
 	// 获取选中的权限
-	console.log(tree.value!.getCheckedKeys(false));
+	const tmpPermission = permiss.defaultList['admin'].map((permiss, index) => {
+		if (tree.value!.getCheckedKeys(false).includes(String(index + 1))) {
+			return permiss
+		}
+		return ''
+	})
+	console.log(tmpPermission);
 };
 
 const handleChange = (val: string[]) => tree.value!.setCheckedKeys(genCheckedKeys())
