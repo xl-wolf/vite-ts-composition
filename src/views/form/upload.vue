@@ -1,36 +1,34 @@
 <template>
-  <div>
-    <div class="container">
-      <div class="handle-box">
-        <el-upload action="#" drag multiple class="upload-com mr10" accept=".xlsx, .xls" :show-file-list="false"
-          :before-upload="beforeUpload" :http-request="httpRequest" ref='uploadRef' :on-success="handleSuccess">
-          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        </el-upload>
-        <div class="upload-file-list" v-if="uploadFiles.length">
-          <h3>已上传文件列表：</h3>
-          <div v-for="(uploadFile, index) in uploadFiles">
-            {{`${index + 1}、${uploadFile.name}`}}
-          </div>
+  <div class="container">
+    <div class="handle-box">
+      <el-upload action="#" drag multiple class="upload-com mr10" accept=".xlsx, .xls" :show-file-list="false"
+        :before-upload="beforeUpload" :http-request="httpRequest" ref='uploadRef' :on-success="handleSuccess">
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+      </el-upload>
+      <div class="upload-file-list" v-if="uploadFiles.length">
+        <h3>已上传文件列表：</h3>
+        <div v-for="(uploadFile, index) in uploadFiles">
+          {{`${index + 1}、${uploadFile.name}`}}
         </div>
-
-        <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有生成表格之后才可使用下载功能">
-          <template #reference>
-            <el-button type="primary" @click="exportXlsx">导出Excel</el-button>
-          </template>
-        </el-popover>
-        <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有所有类型的表单都上传成功后才可以生成表格">
-          <template #reference>
-            <el-button type="primary" @click="renderTable(resList)" :loading="geningtable">生成表格</el-button>
-          </template>
-        </el-popover>
       </div>
-      <el-table :data="tableData" border stripe class="table" max-height="550">
-        <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
-          tooltip-effect="dark" v-for="column in columnFiledList"
-          :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
-      </el-table>
+
+      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有生成表格之后才可使用下载功能">
+        <template #reference>
+          <el-button type="primary" @click="exportXlsx">导出Excel</el-button>
+        </template>
+      </el-popover>
+      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有所有类型的表单都上传成功后才可以生成表格">
+        <template #reference>
+          <el-button type="primary" @click="renderTable(resList)" :loading="geningtable">生成表格</el-button>
+        </template>
+      </el-popover>
     </div>
+    <el-table :data="tableData" border stripe class="table" max-height="550">
+      <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
+        tooltip-effect="dark" v-for="column in columnFiledList"
+        :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
+    </el-table>
   </div>
 </template>
 
@@ -88,31 +86,45 @@ interface TableItem {
   profit: string,
 }
 
-const tableData = ref<TableItem[]>([]);
+const canUploadFile = (file: UploadRawFile) => {
+  if (file.size / 1024 / 1024 > 2) {
+    return {
+      status: false,
+      msg: '文件大小不能超过2MB！'
+    }
+  }
+  if (uploadFiles.value.some((uploadedfile: UploadRawFile) => file.name === uploadedfile.name)) {
+    return {
+      status: false,
+      msg: `${file.name}已上传过！`
+    }
+  }
 
+  return {
+    status: true,
+    msg: ``
+  }
+}
 const importList = ref<any>([]);
 const uploadFiles = ref<UploadRawFile[]>([])
-const uploadFilesDom = ref()
-const beforeUpload: UploadProps['beforeUpload'] = async (rawFile) => {
-  if (rawFile.size / 1024 / 1024 > 2) {
-    ElMessage.warning('表格大小不能超过2MB！')
+
+// 文件上传前的校验
+const beforeUpload: UploadProps['beforeUpload'] = async (rawFile: UploadRawFile) => {
+  // 未通过校验则弹窗提示
+  const { status, msg } = canUploadFile(rawFile)
+  if (!status) {
+    ElMessage.warning(msg)
     return false
   }
-  if (uploadFiles.value.some((file: UploadRawFile) => file.name === rawFile.name)) {
-    ElMessage.warning(`${rawFile.name}已上传过！`)
-    return false
-  }
+  // 校验通过后的操作
   importList.value = await analysisExcel(rawFile);
   uploadFiles.value.push(rawFile)
-  nextTick(() => {
-    uploadFilesDom.value = uploadFilesDom.value ? uploadFilesDom.value : document.querySelector('.upload-file-list') as HTMLElement
-    uploadFilesDom.value.scrollTop = uploadFilesDom.value.scrollHeight;
-  })
+  nextTick(scrollToDomBottom)
 
   return true;
 };
-
-const analysisExcel = (file: any) => {
+// 工具方法用于解析Excel
+const analysisExcel = (file: UploadRawFile) => {
   return new Promise(function (resolve, reject) {
     const reader = new FileReader();
     reader.onload = function (e: any) {
@@ -126,13 +138,23 @@ const analysisExcel = (file: any) => {
   });
 };
 
-// 上层变量保存各类型单据的数据
-const uploadedFileType: string[] = []
+// 滚动到dom的底部
+const uploadFilesDom = ref()
+const scrollToDomBottom = () => {
+  uploadFilesDom.value = uploadFilesDom.value ? uploadFilesDom.value : document.querySelector('.upload-file-list') as HTMLElement
+  uploadFilesDom.value.scrollTop = uploadFilesDom.value.scrollHeight;
+}
+
+// 在内存中处理从上次的excel里面读取出来的数据
+const uploadedFileType: string[] = [] //表格的类型列表，付款单，收款单，售后单，源数据，少一个都无法使用生成表格和导出excel功能
+// 各种excel的内存对象数据
 const tempysj: { [key: string]: any } = {}
 const tempfkd: { [key: string]: any } = {}
 const tempskd: { [key: string]: any } = {}
 const tempshd: { [key: string]: any } = {}
+// 用于生成tabledata的中间列表
 const resList = ref<any>([])
+// 重复的订单编号列表
 const duplicateOrderList = ref<any>([])
 const httpRequest = async () => {
   if (importList.value.length > 5000) return ElMessage.warning('表格数据不得多于5000条')
@@ -189,7 +211,7 @@ const httpRequest = async () => {
   uploadedFileType.push(ordertype)
 
   list.forEach((item: any) => {
-    if (item.shouldpayfee === 0 || item.shouldpayfee) {
+    if (String(item.shouldpayfee)) {
       if (!tempfkd[item.orderNO]) {
         if (item.orderNO)
           tempfkd[item.orderNO] = item.shouldpayfee
@@ -197,7 +219,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '付款单': item.orderNO })
       }
     }
-    else if (item.shouldgetfee === 0 || (item.shouldgetfee)) {
+    else if (String(item.shouldgetfee)) {
       if (!tempskd[item.orderNO]) {
         if (item.orderNO)
           if (item.orderNO)
@@ -206,7 +228,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '收款单': item.orderNO })
       }
     }
-    else if ((item.salecanalrefund === 0 || item.salecanalrefund) && (item.salerepositoryrefund === 0 || item.salerepositoryrefund)) {
+    else if (String(item.salecanalrefund) && String(item.salerepositoryrefund)) {
       if (!tempshd[item.orderNO]) {
         if (item.orderNO)
           tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
@@ -251,14 +273,19 @@ const httpRequest = async () => {
     })
     duplicateOrderList.value.forEach((duplicateOrder: any) => tmpresList.push({ orderNO: Object.values(duplicateOrder)[0] }))
     // console.log(tmpresList, 'tmpresList')
+    // 根据订单编号给表格排序
     tmpresList.sort((a, b) => a.orderNO.slice(1) - b.orderNO.slice(1))
+    // 给表格补上第一列的序号数据
     tmpresList.forEach((item, index) => item.number = index + 1)
+    // 把函数内的临时内存数据tmpresList持久化给页面级别的变量resList
     resList.value = tmpresList
+    // 此时允许用户生成表格
     cangentable.value = true
   }
 };
 
 // 大数据情况下模拟分页加载
+const tableData = ref<TableItem[]>([]);
 const cangentable = ref(false)
 const geningtable = ref(false)
 let start = 0;
@@ -286,8 +313,9 @@ const renderTable = (list: any[]) => {
   }, 200);
 }
 
+//上传成功之后清除历史记录
 const uploadRef = ref<UploadInstance>()
-const handleSuccess = () => uploadRef.value!.clearFiles(); //上传成功之后清除历史记录
+const handleSuccess = () => uploadRef.value!.clearFiles();
 
 // 下载excel的方法
 const candownload = ref(false)
@@ -339,26 +367,23 @@ const exportXlsx = () => {
 
   .upload-com {
     min-width: 360px;
+    margin-right: 10px;
+  }
+
+  .upload-file-list {
+    line-height: 32px;
+    min-width: 240px;
+    margin: 0 14px;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+    flex: 1;
+    max-height: 184px;
+    overflow: auto;
   }
 }
 
 .table {
   width: 100%;
   font-size: 14px;
-}
-
-.mr10 {
-  margin-right: 10px;
-}
-
-.upload-file-list {
-  line-height: 32px;
-  min-width: 240px;
-  margin: 0 14px;
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.7);
-  flex: 1;
-  max-height: 184px;
-  overflow: auto;
 }
 </style>
