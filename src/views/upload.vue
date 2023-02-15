@@ -210,9 +210,9 @@ const httpRequest = async () => {
     }
   });
   uploadedFileType.push(ordertype)
-
+  const existOrequalzero = (data: number) => data === 0 || data
   list.forEach((item: any) => {
-    if (String(item.shouldpayfee)) {
+    if (existOrequalzero(item.shouldpayfee)) {
       if (!tempfkd[item.orderNO]) {
         if (item.orderNO)
           tempfkd[item.orderNO] = item.shouldpayfee
@@ -220,7 +220,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '付款单': item.orderNO })
       }
     }
-    else if (String(item.shouldgetfee)) {
+    else if (existOrequalzero(item.shouldgetfee)) {
       if (!tempskd[item.orderNO]) {
         if (item.orderNO)
           if (item.orderNO)
@@ -229,7 +229,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '收款单': item.orderNO })
       }
     }
-    else if (String(item.salecanalrefund) && String(item.salerepositoryrefund)) {
+    else if (existOrequalzero(item.salecanalrefund) && existOrequalzero(item.salerepositoryrefund)) {
       if (!tempshd[item.orderNO]) {
         if (item.orderNO)
           tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
