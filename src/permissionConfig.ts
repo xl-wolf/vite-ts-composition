@@ -19,7 +19,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/dashboard',
         meta: {
-            title: '系统首页'
+            title: '系统首页',
+            permiss: '系统首页',
         },
         name: 'dashboard',
         component: () => import(/* webpackChunkName: "dashboard" */ './views/dashboard.vue')
@@ -33,7 +34,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/upload',
         meta: {
-            title: '文件上传'
+            title: '文件上传',
+            permiss: '文件上传',
         },
         name: 'upload',
         component: () => import(/* webpackChunkName: "dashboard" */ './views/upload.vue')
@@ -47,7 +49,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/import',
         meta: {
-            title: '导入Excel'
+            title: '导入Excel',
+            permiss: '导入Excel',
         },
         name: 'import',
         component: () => import(/* webpackChunkName: "dashboard" */ './views/import.vue')
@@ -61,7 +64,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/export',
         meta: {
-            title: '导出Excel'
+            title: '导出Excel',
+            permiss: '导出Excel',
         },
         name: 'export',
         component: () => import(/* webpackChunkName: "dashboard" */ './views/export.vue')
@@ -75,7 +79,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/icon',
         meta: {
-            title: '自定义图标'
+            title: '自定义图标',
+            permiss: '自定义图标',
         },
         name: 'icon',
         component: () => import(/* webpackChunkName: "icon" */ './views/icon.vue'),
@@ -89,7 +94,8 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         // 路由的配置项
         path: '/permission',
         meta: {
-            title: '权限管理'
+            title: '权限管理',
+            permiss: '权限管理',
         },
         name: 'permission',
         component: () => import(/* webpackChunkName: "permission" */ './views/permission.vue'),
