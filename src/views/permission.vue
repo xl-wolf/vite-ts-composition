@@ -9,14 +9,8 @@
 			</el-select>
 		</div>
 		<div class="mgb20 tree-wrapper">
-			<el-tree
-				ref="tree"
-				:data="data"
-				node-key="id"
-				default-expand-all
-				show-checkbox
-				:default-checked-keys="checkedKeys"
-			/>
+			<el-tree ref="tree" :data="data" node-key="id" default-expand-all show-checkbox
+				:default-checked-keys="checkedKeys" />
 		</div>
 		<el-button type="primary" @click="onSubmit">保存权限</el-button>
 	</div>
@@ -28,7 +22,6 @@ import { ElTree } from 'element-plus';
 import { usePermissStore } from '../store/permiss';
 
 const role = ref<string>('admin');
-
 interface Tree {
 	id: string;
 	label: string;
@@ -42,53 +35,39 @@ const data: Tree[] = [
 	},
 	{
 		id: '2',
-		label: '表格相关',
-		children: [
-			{
-				id: '2-1',
-				label: '基础表格'
-			},
-			{
-				id: '2-2',
-				label: '导入Excel'
-			},
-			{
-				id: '2-3',
-				label: '导出Excel'
-			},
-		]
+		label: '文件上传'
 	},
 	{
 		id: '3',
-		label: '表单相关',
-		children: [
-			{
-				id: '3-1',
-				label: '基本表单'
-			},
-			{
-				id: '3-2',
-				label: '文件上传'
-			}
-		]
+		label: '导入Excel'
 	},
 	{
 		id: '4',
-		label: '自定义图标'
+		label: '导出Excel'
 	},
 	{
 		id: '5',
+		label: '自定义图标'
+	},
+	{
+		id: '6',
 		label: '权限管理'
 	},
 ];
 
 const permiss = usePermissStore();
-
+// 生成el-tree所需要的default-checked-keys数据样子
+const genCheckedKeys = () => Object.keys(permiss.defaultList[role.value]).map((key: string, index: number) => {
+	if (permiss.defaultList[role.value][index]) {
+		return String(+key + 1)
+	}
+	return ''
+})
 // 获取当前权限
 const checkedKeys = ref<string[]>([]);
 const getPremission = () => {
 	// 请求接口返回权限
-	checkedKeys.value = permiss.defaultList[role.value];
+	checkedKeys.value = genCheckedKeys();
 };
 getPremission();
 
@@ -99,15 +78,15 @@ const onSubmit = () => {
 	console.log(tree.value!.getCheckedKeys(false));
 };
 
-const handleChange = (val: string[]) => {
-	tree.value!.setCheckedKeys(permiss.defaultList[role.value]);
-};
+const handleChange = (val: string[]) => tree.value!.setCheckedKeys(genCheckedKeys())
+
 </script>
 
 <style scoped>
 .tree-wrapper {
 	max-width: 500px;
 }
+
 .label {
 	font-size: 14px;
 }
