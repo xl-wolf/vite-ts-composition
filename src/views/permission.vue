@@ -20,6 +20,7 @@
 import { ref } from 'vue';
 import { ElTree } from 'element-plus';
 import { usePermissStore } from '../store/permiss';
+import { pagePermission } from '../permissionConfig';
 
 const role = ref<string>('admin');
 interface Tree {
@@ -28,33 +29,7 @@ interface Tree {
 	children?: Tree[];
 }
 
-const data: Tree[] = [
-	{
-		id: '1',
-		label: '系统首页'
-	},
-	{
-		id: '2',
-		label: '文件上传'
-	},
-	{
-		id: '3',
-		label: '导入Excel'
-	},
-	{
-		id: '4',
-		label: '导出Excel'
-	},
-	{
-		id: '5',
-		label: '自定义图标'
-	},
-	{
-		id: '6',
-		label: '权限管理'
-	},
-];
-
+const data: Tree[] = pagePermission.map((pagecfg, index) => ({ id: String(index + 1), label: pagecfg.title }))
 const permiss = usePermissStore();
 // 生成el-tree所需要的default-checked-keys数据样子
 const genCheckedKeys = () => Object.keys(permiss.defaultList[role.value]).map((key: string, index: number) => {
