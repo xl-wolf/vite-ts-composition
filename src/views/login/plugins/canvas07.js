@@ -1,263 +1,176 @@
+// CLASSES
+class Shard {
+	x
+	constructor(x, y, hue) {
+		this.x = x
+		this.y = y
+		this.hue = hue
+		this.lightness = 50
+		this.size = 15 + Math.random() * 10
+		const angle = Math.random() * 2 * Math.PI
+		const blastSpeed = 1 + Math.random() * 6
+		this.xSpeed = Math.cos(angle) * blastSpeed
+		this.ySpeed = Math.sin(angle) * blastSpeed
+		this.target = getTarget()
+		this.ttl = 100
+		this.timer = 0
+	}
+	draw() {
+		canvasCtx.fillStyle = `hsl(${this.hue}, 100%, ${this.lightness}%)`
+		canvasCtx.beginPath()
+		canvasCtx.arc(this.x, this.y, this.size, 0, 2 * Math.PI)
+		canvasCtx.closePath()
+		canvasCtx.fill()
+	}
+	update() {
+		if (this.target) {
+			const dx = this.target.x - this.x
+			const dy = this.target.y - this.y
+			const dist = Math.sqrt(dx * dx + dy * dy)
+			const a = Math.atan2(dy, dx)
+			const tx = Math.cos(a) * 5
+			const ty = Math.sin(a) * 5
+			this.size = lerp(this.size, 1.5, 0.05)
+
+			if (dist < 5) {
+				this.lightness = lerp(this.lightness, 100, 0.01)
+				this.xSpeed = this.ySpeed = 0
+				this.x = lerp(this.x, this.target.x + fidelity / 2, 0.05)
+				this.y = lerp(this.y, this.target.y + fidelity / 2, 0.05)
+				this.timer += 1
+			} else if (dist < 10) {
+				this.lightness = lerp(this.lightness, 100, 0.01)
+				this.xSpeed = lerp(this.xSpeed, tx, 0.1)
+				this.ySpeed = lerp(this.ySpeed, ty, 0.1)
+				this.timer += 1
+			} else {
+				this.xSpeed = lerp(this.xSpeed, tx, 0.02)
+				this.ySpeed = lerp(this.ySpeed, ty, 0.02)
+			}
+		} else {
+			this.ySpeed += 0.05
+			//this.xSpeed = lerp(this.xSpeed, 0, 0.1);
+			this.size = lerp(this.size, 1, 0.05)
+
+			if (this.y > canvas.height) {
+				shards.forEach((shard, idx) => {
+					if (shard === this) {
+						shards.splice(idx, 1)
+					}
+				})
+			}
+		}
+		this.x = this.x + this.xSpeed
+		this.y = this.y + this.ySpeed
+	}
+}
+
+class Rocket {
+	x
+	constructor() {
+		const quarterW = canvas.width / 4
+		this.x = quarterW + Math.random() * (canvas.width - quarterW)
+		this.y = canvas.height - 15
+		this.angle = (Math.random() * Math.PI) / 4 - Math.PI / 6
+		this.blastSpeed = 6 + Math.random() * 7
+		this.shardCount = 15 + Math.floor(Math.random() * 15)
+		this.xSpeed = Math.sin(this.angle) * this.blastSpeed
+		this.ySpeed = -Math.cos(this.angle) * this.blastSpeed
+		this.hue = Math.floor(Math.random() * 360)
+		this.trail = []
+	}
+	draw() {
+		canvasCtx.save()
+		canvasCtx.translate(this.x, this.y)
+		canvasCtx.rotate(Math.atan2(this.ySpeed, this.xSpeed) + Math.PI / 2)
+		canvasCtx.fillStyle = `hsl(${this.hue}, 100%, 50%)`
+		canvasCtx.fillRect(0, 0, 5, 15)
+		canvasCtx.restore()
+	}
+	update() {
+		this.x = this.x + this.xSpeed
+		this.y = this.y + this.ySpeed
+		this.ySpeed += 0.1
+	}
+
+	explode() {
+		for (let i = 0; i < 70; i++) {
+			shards.push(new Shard(this.x, this.y, this.hue))
+		}
+	}
+}
+
+// INITIALIZATION
+const canvas = document.createElement("canvas")
+function setSize() {
+	canvas.width = window.innerWidth
+	canvas.height = window.innerHeight
+}
+setSize()
+const canvasCtx = canvas.getContext("2d")
+let fontSize = 200
+const rockets = []
+const shards = []
+const targets = []
+const fidelity = 3
+let counter = 0
+let textWidth = 99999999
+
+// ANIMATION LOOP
+let animationFrameId = null
+function loop() {
+	console.log("canvas08")
+	canvasCtx.fillStyle = "rgba(0, 0, 0, .1)"
+	canvasCtx.fillRect(0, 0, canvas.width, canvas.height)
+	counter += 1
+
+	if (counter % 15 === 0) {
+		rockets.push(new Rocket())
+	}
+	rockets.forEach((r, i) => {
+		r.draw()
+		r.update()
+		if (r.ySpeed > 0) {
+			r.explode()
+			rockets.splice(i, 1)
+		}
+	})
+
+	shards.forEach((s, i) => {
+		s.draw()
+		s.update()
+
+		if (s.timer >= s.ttl || s.lightness >= 99) {
+			shards.splice(i, 1)
+		}
+	})
+	animationFrameId = requestAnimationFrame(loop)
+}
 export const drawCanvas = (domId) => {
-	console.log("canvas07")
 	const dom = document.getElementById(domId)
 	dom.appendChild(canvas)
 	dom.style.backgroundColor = "#000"
-	draw()
+	loop()
 }
 export const clearFunc = () => {
 	animationFrameId && cancelAnimationFrame(animationFrameId)
 	console.log("animationFrameId", animationFrameId)
 }
-var canvas = document.createElement("canvas")
+window.addEventListener("resize", () => {
+	setSize()
+})
+// HELPER FUNCTIONS
+const lerp = (a, b, t) => (Math.abs(b - a) > 0.1 ? a + t * (b - a) : b)
 
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
+function getTarget() {
+	if (targets.length > 0) {
+		const idx = Math.floor(Math.random() * targets.length)
+		let { x, y } = targets[idx]
+		targets.splice(idx, 1)
 
-// Initialize the GL context
-var gl = canvas.getContext("webgl")
-if (!gl) {
-	console.error("Unable to initialize WebGL.")
-}
+		x += canvas.width / 2 - textWidth / 2
+		y += canvas.height / 2 - fontSize / 2
 
-//Time step
-var dt = 0.015
-//Time
-var time = 0.0
-
-var vertexSource = `
-attribute vec2 position;
-void main() {
-	gl_Position = vec4(position, 0.0, 1.0);
-}`
-
-var fragmentSource = `
-precision highp float;
-
-uniform float width;
-uniform float height;
-vec2 resolution = vec2(width, height);
-
-uniform float time;
-
-#define POINT_COUNT 8
-
-vec2 points[POINT_COUNT];
-const float speed = -0.7;
-const float len = 0.25;
-float intensity = 0.9;
-float radius = 0.02;
-
-float sdBezier(vec2 pos, vec2 A, vec2 B, vec2 C){    
-	vec2 a = B - A;
-	vec2 b = A - 2.0*B + C;
-	vec2 c = a * 2.0;
-	vec2 d = A - pos;
-
-	float kk = 1.0 / dot(b,b);
-	float kx = kk * dot(a,b);
-	float ky = kk * (2.0*dot(a,a)+dot(d,b)) / 3.0;
-	float kz = kk * dot(d,a);      
-
-	float res = 0.0;
-
-	float p = ky - kx*kx;
-	float p3 = p*p*p;
-	float q = kx*(2.0*kx*kx - 3.0*ky) + kz;
-	float h = q*q + 4.0*p3;
-
-	if(h >= 0.0){ 
-		h = sqrt(h);
-		vec2 x = (vec2(h, -h) - q) / 2.0;
-		vec2 uv = sign(x)*pow(abs(x), vec2(1.0/3.0));
-		float t = uv.x + uv.y - kx;
-		t = clamp( t, 0.0, 1.0 );
-
-		// 1 root
-		vec2 qos = d + (c + b*t)*t;
-		res = length(qos);
-	}else{
-		float z = sqrt(-p);
-		float v = acos( q/(p*z*2.0) ) / 3.0;
-		float m = cos(v);
-		float n = sin(v)*1.732050808;
-		vec3 t = vec3(m + m, -n - m, n - m) * z - kx;
-		t = clamp( t, 0.0, 1.0 );
-
-		// 3 roots
-		vec2 qos = d + (c + b*t.x)*t.x;
-		float dis = dot(qos,qos);
-        
-		res = dis;
-
-		qos = d + (c + b*t.y)*t.y;
-		dis = dot(qos,qos);
-		res = min(res,dis);
-		
-		qos = d + (c + b*t.z)*t.z;
-		dis = dot(qos,qos);
-		res = min(res,dis);
-
-		res = sqrt( res );
+		return { x, y }
 	}
-    
-	return res;
-}
-
-//http://mathworld.wolfram.com/Lemniscate.html
-vec2 getLemniscatePosition(float t){
-	//Set the width of the lemniscate to depend on the location parameter, leading to a skewed path
-	float a = (1.0 + 0.5 + 0.5 * sin(t)) * 15.0;
-
-	return vec2((a * cos(t)) / (1.0 + (sin(t) * sin(t))), (a * sin(t) * cos(t))/ (1.0 + (sin(t) * sin(t))));
-}
-
-//https://www.shadertoy.com/view/3s3GDn
-float getGlow(float dist, float radius, float intensity){
-	return pow(radius/dist, intensity);
-}
-
-float getSegment(float t, vec2 pos, float offset, float scale){
-	for(int i = 0; i < POINT_COUNT; i++){
-		points[i] = getLemniscatePosition(offset + float(i)*len + fract(speed * t) * 6.28);
-	}
-    
-	vec2 c = (points[0] + points[1]) / 2.0;
-	vec2 c_prev;
-	float dist = 10000.0;
-    
-	for(int i = 0; i < POINT_COUNT-1; i++){
-		//https://tinyurl.com/y2htbwkm
-		c_prev = c;
-		c = (points[i] + points[i+1]) / 2.0;
-		dist = min(dist, sdBezier(pos, scale * c_prev, scale * points[i], scale * c));
-	}
-	return max(0.0, dist);
-}
-
-void main(){
-	vec2 uv = gl_FragCoord.xy/resolution.xy;
-	float widthHeightRatio = resolution.x/resolution.y;
-	vec2 centre = vec2(0.5, 0.5);
-	vec2 pos = centre - uv;
-	pos.y /= widthHeightRatio;
-	float scale = 0.000015 * height;
-	
-	float t = time;
-    
-	//Get first segment
-	float dist = getSegment(t, pos, 0.0, scale);
-	float glow = getGlow(dist, radius, intensity);
-    
-	vec3 col = vec3(0.0);
-    
-	//White core
-    col += 10.0*vec3(smoothstep(0.003, 0.001, dist));
-    //Purple glow
-    col += glow * vec3(0.7, 0.3, 0.9);
-    
-    //Get second segment
-    dist = getSegment(t, pos, 3.7, scale);
-    glow = getGlow(dist, radius, intensity);
-    
-    //White core
-    col += 10.0*vec3(smoothstep(0.003, 0.001, dist));
-    //Blue glow
-    col += glow * vec3(0.3, 0.5, 0.9);
-        
-	//Tone mapping
-	col = 1.0 - exp(-col);
-
-	//Output to screen
- 	gl_FragColor = vec4(col,1.0);
-}`
-
-window.addEventListener("resize", onWindowResize, false)
-function onWindowResize() {
-	canvas.width = window.innerWidth
-	canvas.height = window.innerHeight
-	gl.viewport(0, 0, canvas.width, canvas.height)
-	gl.uniform1f(widthHandle, window.innerWidth)
-	gl.uniform1f(heightHandle, window.innerHeight)
-}
-
-function compileShader(shaderSource, shaderType) {
-	var shader = gl.createShader(shaderType)
-	gl.shaderSource(shader, shaderSource)
-	gl.compileShader(shader)
-	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		throw "Shader compile failed with: " + gl.getShaderInfoLog(shader)
-	}
-	return shader
-}
-
-function getAttribLocation(program, name) {
-	var attributeLocation = gl.getAttribLocation(program, name)
-	if (attributeLocation === -1) {
-		throw "Cannot find attribute " + name + "."
-	}
-	return attributeLocation
-}
-
-function getUniformLocation(program, name) {
-	var attributeLocation = gl.getUniformLocation(program, name)
-	if (attributeLocation === -1) {
-		throw "Cannot find uniform " + name + "."
-	}
-	return attributeLocation
-}
-
-var vertexShader = compileShader(vertexSource, gl.VERTEX_SHADER)
-var fragmentShader = compileShader(fragmentSource, gl.FRAGMENT_SHADER)
-
-var program = gl.createProgram()
-gl.attachShader(program, vertexShader)
-gl.attachShader(program, fragmentShader)
-gl.linkProgram(program)
-
-gl.useProgram(program)
-
-var vertexData = new Float32Array([
-	-1.0,
-	1.0, // top left
-	-1.0,
-	-1.0, // bottom left
-	1.0,
-	1.0, // top right
-	1.0,
-	-1.0, // bottom right
-])
-
-var vertexDataBuffer = gl.createBuffer()
-gl.bindBuffer(gl.ARRAY_BUFFER, vertexDataBuffer)
-gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW)
-
-var positionHandle = getAttribLocation(program, "position")
-
-gl.enableVertexAttribArray(positionHandle)
-gl.vertexAttribPointer(
-	positionHandle,
-	2, // position is a vec2 (2 values per component)
-	gl.FLOAT, // each component is a float
-	false, // don't normalize values
-	2 * 4, // two 4 byte float components per vertex (32 bit float is 4 bytes)
-	0 // how many bytes inside the buffer to start from
-)
-
-var timeHandle = getUniformLocation(program, "time")
-var widthHandle = getUniformLocation(program, "width")
-var heightHandle = getUniformLocation(program, "height")
-
-gl.uniform1f(widthHandle, window.innerWidth)
-gl.uniform1f(heightHandle, window.innerHeight)
-let animationFrameId = null
-function draw() {
-	//Update time
-	time += dt
-
-	//Send uniforms to program
-	gl.uniform1f(timeHandle, time)
-	//Draw a triangle strip connecting vertices 0-4
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-	animationFrameId = requestAnimationFrame(draw)
 }

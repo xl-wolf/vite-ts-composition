@@ -1,366 +1,347 @@
-var pi
-var ctx
-var cx
-var cy
-var playerZ
-var playerX
-var playerY
-var pitch
-var yaw
-var scale
-var seedTimer
-var seedInterval
-var seedLife
-var gravity
-var seeds
-var sparkPics
-var s
-var sparks
-var frames
-
-// 创建背景画布
 var canvas = document.createElement("canvas")
-function initVars(domId) {
-	pi = Math.PI
-	ctx = canvas.getContext("2d")
-	canvas.width = document.getElementById(domId).offsetWidth
-	canvas.height = document.getElementById(domId).offsetHeight
-	cx = canvas.width / 2
-	cy = canvas.height / 2
-	playerZ = -25
-	playerX = playerY = pitch = yaw = 0
-	scale = 600
-	seedTimer = 0
-	;(seedInterval = 5), (seedLife = 100)
-	gravity = 0.02
-	seeds = new Array()
-	sparkPics = new Array()
-	s = "https://cantelope.org/NYE/"
-	for (var i = 1; i <= 10; ++i) {
-		var sparkPic = new Image()
-		sparkPic.src = s + "spark" + i + ".png"
-		sparkPics.push(sparkPic)
-	}
-	sparks = new Array()
-	frames = 0
+var ctx = canvas.getContext("2d")
+//gradient
+var options = {
+	resolution: 1,
+	gradient: {
+		resolution: 4,
+		smallRadius: 0,
+		hue: {
+			min: 0,
+			max: 360,
+		},
+		saturation: {
+			min: 40,
+			max: 80,
+		},
+		lightness: {
+			min: 25,
+			max: 35,
+		},
+	},
+	bokeh: {
+		count: 30,
+		size: {
+			min: 0.1,
+			max: 0.3,
+		},
+		alpha: {
+			min: 0.05,
+			max: 0.4,
+		},
+		jitter: {
+			x: 0.3,
+			y: 0.3,
+		},
+	},
+	speed: {
+		min: 0.0001,
+		max: 0.001,
+	},
+	debug: {
+		strokeBokeh: false,
+		showFps: false,
+	},
+}
+var mobile = {
+	force: false,
+	resolution: 0.5,
+	bokeh: {
+		count: 6,
+	},
+}
+//buffers
+var gradientBuffer = document.createElement("canvas").getContext("2d")
+var circleBuffer = document.createElement("canvas").getContext("2d")
+//render time, fps calculations, debug
+var time
+var targetFps = 60 //not actual fps, but updates per second
+var curFps = 0
+var cntFps = 0
+var fps = 0
+var w = 0
+var h = 0
+var scale = 0
+//constants for faster calcs
+var pi2 = Math.PI * 2
+//util functions
+function lerp(a, b, step) {
+	return step * (b - a) + a
+}
+function clamp(a) {
+	if (a < 0) return 0
+	if (a > 1) return 1
+	return a
+}
+function rand(obj) {
+	return Math.random() * (obj.max - obj.min) + obj.min
+}
+function newColor() {
+	return new Color(rand(options.gradient.hue), rand(options.gradient.saturation), rand(options.gradient.lightness))
 }
 
-function rasterizePoint(x, y, z) {
-	var p, d
-	x -= playerX
-	y -= playerY
-	z -= playerZ
-	p = Math.atan2(x, z)
-	d = Math.sqrt(x * x + z * z)
-	x = Math.sin(p - yaw) * d
-	z = Math.cos(p - yaw) * d
-	p = Math.atan2(y, z)
-	d = Math.sqrt(y * y + z * z)
-	y = Math.sin(p - pitch) * d
-	z = Math.cos(p - pitch) * d
-	var rx1 = -1000,
-		ry1 = 1,
-		rx2 = 1000,
-		ry2 = 1,
-		rx3 = 0,
-		ry3 = 0,
-		rx4 = x,
-		ry4 = z,
-		uc = (ry4 - ry3) * (rx2 - rx1) - (rx4 - rx3) * (ry2 - ry1)
-	if (!uc) return { x: 0, y: 0, d: -1 }
-	var ua = ((rx4 - rx3) * (ry1 - ry3) - (ry4 - ry3) * (rx1 - rx3)) / uc
-	var ub = ((rx2 - rx1) * (ry1 - ry3) - (ry2 - ry1) * (rx1 - rx3)) / uc
-	if (!z) z = 0.000000001
-	if (ua > 0 && ua < 1 && ub > 0 && ub < 1) {
-		return {
-			x: cx + (rx1 + ua * (rx2 - rx1)) * scale,
-			y: cy + (y / z) * scale,
-			d: Math.sqrt(x * x + y * y + z * z),
-		}
-	} else {
-		return {
-			x: cx + (rx1 + ua * (rx2 - rx1)) * scale,
-			y: cy + (y / z) * scale,
-			d: -1,
-		}
-	}
+function isMobile() {
+	return (
+		mobile.force ||
+		navigator.userAgent.match(/Android/i) ||
+		navigator.userAgent.match(/webOS/i) ||
+		navigator.userAgent.match(/iPhone/i) ||
+		navigator.userAgent.match(/iPad/i) ||
+		navigator.userAgent.match(/iPod/i) ||
+		navigator.userAgent.match(/BlackBerry/i) ||
+		navigator.userAgent.match(/Windows Phone/i)
+	)
 }
 
-function spawnSeed() {
-	var seed = new Object()
-	seed.x = -50 + Math.random() * 100
-	seed.y = 25
-	seed.z = -50 + Math.random() * 100
-	seed.vx = 0.1 - Math.random() * 0.2
-	seed.vy = -1.5 //*(1+Math.random()/2);
-	seed.vz = 0.1 - Math.random() * 0.2
-	seed.born = frames
-	seeds.push(seed)
-}
-
-function splode(x, y, z) {
-	var t = 5 + parseInt(Math.random() * 150)
-	var sparkV = 1 + Math.random() * 2.5
-	var type = parseInt(Math.random() * 3)
-	var pic1
-	var pic2
-	var pic3
-	var pow
-	switch (type) {
-		case 0:
-			pic1 = parseInt(Math.random() * 10)
-			break
-		case 1:
-			pic1 = parseInt(Math.random() * 10)
-			do {
-				pic2 = parseInt(Math.random() * 10)
-			} while (pic2 == pic1)
-			break
-		case 2:
-			pic1 = parseInt(Math.random() * 10)
-			do {
-				pic2 = parseInt(Math.random() * 10)
-			} while (pic2 == pic1)
-			do {
-				pic3 = parseInt(Math.random() * 10)
-			} while (pic3 == pic1 || pic3 == pic2)
-			break
-	}
-	for (var m = 1; m < t; ++m) {
-		var spark = new Object()
-		spark.x = x
-		spark.y = y
-		spark.z = z
-		var p1 = pi * 2 * Math.random()
-		var p2 = pi * Math.random()
-		var v = sparkV * (1 + Math.random() / 6)
-		spark.vx = Math.sin(p1) * Math.sin(p2) * v
-		spark.vz = Math.cos(p1) * Math.sin(p2) * v
-		spark.vy = Math.cos(p2) * v
-		switch (type) {
-			case 0:
-				spark.img = sparkPics[pic1]
-				break
-			case 1:
-				spark.img = sparkPics[parseInt(Math.random() * 2) ? pic1 : pic2]
-				break
-			case 2:
-				switch (parseInt(Math.random() * 3)) {
-					case 0:
-						spark.img = sparkPics[pic1]
-						break
-					case 1:
-						spark.img = sparkPics[pic2]
-						break
-					case 2:
-						spark.img = sparkPics[pic3]
-						break
-				}
-				break
+window.requestAnimFrame = (function(callback) {
+	if (isMobile())
+		return function(callback) {
+			window.setTimeout(callback, 1000 / 10)
 		}
-		spark.radius = 25 + Math.random() * 50
-		spark.alpha = 1
-		spark.trail = new Array()
-		sparks.push(spark)
-	}
-	switch (parseInt(Math.random() * 4)) {
-		case 0:
-			pow = new Audio(s + "pow1.ogg")
-			break
-		case 1:
-			pow = new Audio(s + "pow2.ogg")
-			break
-		case 2:
-			pow = new Audio(s + "pow3.ogg")
-			break
-		case 3:
-			pow = new Audio(s + "pow4.ogg")
-			break
-	}
-	var d = Math.sqrt((x - playerX) * (x - playerX) + (y - playerY) * (y - playerY) + (z - playerZ) * (z - playerZ))
-	pow.volume = 1.5 / (1 + d / 10)
-	try {
-		pow.play()
-	} catch (err) {
-		console.log(err)
+	return (
+		window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.oRequestAnimationFrame ||
+		window.msRequestAnimationFrame ||
+		function(callback) {
+			window.setTimeout(callback, 1000 / 60)
+		}
+	)
+})()
+
+//classes
+function Color(h, s, l) {
+	this.h = h
+	this.s = s
+	this.l = l
+
+	this.str = function() {
+		return this.h + ", " + this.s + "%, " + this.l + "%"
 	}
 }
+function ColorPoint(x, y, color) {
+	this.x = x
+	this.y = y
+	this.oldColor = color
+	this.newColor = color
+	this.step = 0
+	this.speed = 0
 
-function doLogic() {
-	if (seedTimer < frames) {
-		seedTimer = frames + seedInterval * Math.random() * 10
-		spawnSeed()
+	this.color = function() {
+		return new Color(lerp(this.oldColor.h, this.newColor.h, this.step), lerp(this.oldColor.s, this.newColor.s, this.step), lerp(this.oldColor.l, this.newColor.l, this.step))
 	}
-	for (var i = 0; i < seeds.length; ++i) {
-		seeds[i].vy += gravity
-		seeds[i].x += seeds[i].vx
-		seeds[i].y += seeds[i].vy
-		seeds[i].z += seeds[i].vz
-		if (frames - seeds[i].born > seedLife) {
-			splode(seeds[i].x, seeds[i].y, seeds[i].z)
-			seeds.splice(i, 1)
-		}
-	}
-	for (var i = 0; i < sparks.length; ++i) {
-		if (sparks[i].alpha > 0 && sparks[i].radius > 5) {
-			sparks[i].alpha -= 0.01
-			sparks[i].radius /= 1.02
-			sparks[i].vy += gravity
-			var point = new Object()
-			point.x = sparks[i].x
-			point.y = sparks[i].y
-			point.z = sparks[i].z
-			if (sparks[i].trail.length) {
-				var x = sparks[i].trail[sparks[i].trail.length - 1].x
-				var y = sparks[i].trail[sparks[i].trail.length - 1].y
-				var z = sparks[i].trail[sparks[i].trail.length - 1].z
-				var d = (point.x - x) * (point.x - x) + (point.y - y) * (point.y - y) + (point.z - z) * (point.z - z)
-				if (d > 9) {
-					sparks[i].trail.push(point)
-				}
-			} else {
-				sparks[i].trail.push(point)
-			}
-			if (sparks[i].trail.length > 5) sparks[i].trail.splice(0, 1)
-			sparks[i].x += sparks[i].vx
-			sparks[i].y += sparks[i].vy
-			sparks[i].z += sparks[i].vz
-			sparks[i].vx /= 1.075
-			sparks[i].vy /= 1.075
-			sparks[i].vz /= 1.075
-		} else {
-			sparks.splice(i, 1)
-		}
-	}
-	var p = Math.atan2(playerX, playerZ)
-	var d = Math.sqrt(playerX * playerX + playerZ * playerZ)
-	d += Math.sin(frames / 80) / 1.25
-	var t = Math.sin(frames / 200) / 40
-	playerX = Math.sin(p + t) * d
-	playerZ = Math.cos(p + t) * d
-	yaw = pi + p + t
 }
+var colorPoints = [new ColorPoint(0, 0, new Color(196, 59, 34)), new ColorPoint(0, 1, new Color(269, 79, 32)), new ColorPoint(1, 0, new Color(30, 42, 33)), new ColorPoint(1, 1, new Color(304, 47, 27))]
 
-function draw() {
-	ctx.clearRect(0, 0, cx * 2, cy * 2)
+function BokehCircle(x, y, size, alpha) {
+	this.oldX = x
+	this.oldY = y
+	this.oldSize = size
+	this.oldAlpha = alpha
+	this.newX = 0
+	this.newY = 0
+	this.newAlpha = 0
+	this.newSize = 0
+	this.step = 0
+	this.speed = 0
 
-	ctx.fillStyle = "#0ff"
-	for (var i = -100; i < 100; i += 3) {
-		for (var j = -100; j < 100; j += 4) {
-			var x = i
-			var z = j
-			var y = 25
-			var point = rasterizePoint(x, y, z)
-			if (point.d != -1) {
-				var size = 250 / (1 + point.d)
-				var d = Math.sqrt(x * x + z * z)
-				var a = 0.75 - Math.pow(d / 100, 6) * 0.75
-				if (a > 0) {
-					ctx.globalAlpha = a
-					ctx.fillRect(point.x - size / 2, point.y - size / 2, size, size)
-				}
-			}
-		}
+	this.x = function() {
+		return lerp(this.oldX, this.newX, this.step)
 	}
+	this.y = function() {
+		return lerp(this.oldY, this.newY, this.step)
+	}
+	this.alpha = function() {
+		return lerp(this.oldAlpha, this.newAlpha, this.step)
+	}
+	this.size = function() {
+		return lerp(this.oldSize, this.newSize, this.step)
+	}
+}
+var circles = []
+
+function setJitter(circle) {
+	circle.newX = clamp(
+		circle.oldX +
+			rand({
+				min: -options.bokeh.jitter.x,
+				max: options.bokeh.jitter.x,
+			})
+	)
+	circle.newY = clamp(
+		circle.oldY +
+			rand({
+				min: -options.bokeh.jitter.y,
+				max: options.bokeh.jitter.y,
+			})
+	)
+}
+function resize() {
+	var width = window.innerWidth
+	var height = window.innerHeight
+
+	w = width * options.resolution
+	h = height * options.resolution
+	scale = Math.sqrt(w * h)
+
+	//actual canvas
+	ctx.canvas.width = width
+	ctx.canvas.height = height
+	ctx.scale(1 / options.resolution, 1 / options.resolution)
+
+	//circle canvas
+	var circleSize = options.bokeh.size.max * scale
+	circleBuffer.canvas.width = circleSize * 2 + 1
+	circleBuffer.canvas.height = circleSize * 2 + 1
+
+	circleBuffer.fillStyle = "rgb(255, 255, 255)"
+	circleBuffer.beginPath()
+	circleBuffer.arc(circleSize, circleSize, circleSize, 0, pi2)
+	circleBuffer.closePath()
+	circleBuffer.fill()
+
+	//force render on mobile
+	if (isMobile()) render()
+}
+function softCopy(src, dest) {
+	var i = 0
+
+	for (var property in src) {
+		if (dest.hasOwnProperty(property)) if (softCopy(src[property], dest[property]) == 0) dest[property] = src[property]
+		i++
+	}
+	return i
+}
+function init() {
+	gradientBuffer.canvas.height = options.gradient.resolution
+	gradientBuffer.canvas.width = options.gradient.resolution
+
+	if (isMobile()) softCopy(mobile, options)
+
+	resize()
+
+	colorPoints.forEach(function(point) {
+		point.oldColor = newColor()
+		point.newColor = newColor()
+		point.speed = rand(options.speed)
+	})
+    circles = []
+	for (let i = 0; i < options.bokeh.count; i++) {
+		circles.push(new BokehCircle(Math.random(), Math.random(), rand(options.bokeh.size), rand(options.bokeh.alpha)))
+		circles[i].newAlpha = rand(options.bokeh.alpha)
+		circles[i].newSize = rand(options.bokeh.size)
+		circles[i].speed = rand(options.speed)
+		setJitter(circles[i])
+	}
+}
+function iterate() {
+	var now = Date.now()
+	curFps += now - (time || now)
+	cntFps++
+	var delta = (now - (time || now)) / (1000 / targetFps)
+	time = now
+
+	if (curFps > 1000) {
+		fps = 1000 / (curFps / cntFps)
+		curFps -= 1000
+		cntFps = 0
+	}
+
+	colorPoints.forEach(function(point) {
+		point.step += point.speed * delta
+
+		if (point.step >= 1) {
+			point.step = 0
+
+			point.oldColor = point.newColor
+
+			point.newColor = newColor()
+			point.speed = rand(options.speed)
+		}
+	})
+
+	circles.forEach(function(circle) {
+		circle.step += circle.speed * delta
+		if (circle.step >= 1) {
+			circle.step = 0
+
+			circle.oldX = circle.newX
+			circle.oldY = circle.newY
+			circle.oldAlpha = circle.newAlpha
+			circle.oldSize = circle.newSize
+
+			setJitter(circle)
+			circle.newAlpha = rand(options.bokeh.alpha)
+			circle.newSize = rand(options.bokeh.size)
+			circle.speed = rand(options.speed)
+		}
+	})
+}
+let animationFrameId
+function render() {
+    console.log('canvas11')
+	iterate()
+
+	//draw point gradient to buffer
+	colorPoints.forEach(function(point) {
+		var x = point.x * options.gradient.resolution
+		var y = point.y * options.gradient.resolution
+		var grad = gradientBuffer.createRadialGradient(x, y, options.gradient.smallRadius, x, y, options.gradient.resolution)
+		grad.addColorStop(0, "hsla(" + point.color().str() + ", 255)")
+		grad.addColorStop(1, "hsla(" + point.color().str() + ", 0)")
+
+		gradientBuffer.fillStyle = grad
+		gradientBuffer.fillRect(0, 0, options.gradient.resolution, options.gradient.resolution)
+	})
+
+	//draw gradient from memory
+	ctx.globalCompositeOperation = "source-over"
+	ctx.drawImage(gradientBuffer.canvas, 0, 0, w, h)
+
+	//draw bokeh
+	ctx.globalCompositeOperation = "overlay"
+	if (options.debug.strokeBokeh) ctx.strokeStyle = "yellow"
+
+	circles.forEach(function(circle) {
+		var size = circle.size() * scale
+
+		ctx.globalAlpha = circle.alpha()
+		ctx.drawImage(circleBuffer.canvas, circle.x() * w - size / 2, circle.y() * h - size / 2, size, size)
+
+		if (options.debug.strokeBokeh) {
+			ctx.globalAlpha = 1
+			ctx.globalCompositeOperation = "source-over"
+			ctx.strokeRect(circle.x() * w - size / 2, circle.y() * h - size / 2, size, size)
+			ctx.globalCompositeOperation = "overlay"
+		}
+	})
 	ctx.globalAlpha = 1
-	for (var i = 0; i < seeds.length; ++i) {
-		var point = rasterizePoint(seeds[i].x, seeds[i].y, seeds[i].z)
-		if (point.d != -1) {
-			var size = 200 / (1 + point.d)
-			ctx.fillRect(point.x - size / 2, point.y - size / 2, size, size)
-		}
+
+	//debug info
+	if (options.debug.showFps) {
+		if (fps <= 10) ctx.fillStyle = "red"
+		else ctx.fillStyle = "yellow"
+
+		ctx.font = "20px sans-serif"
+		ctx.fillText(Math.round(fps) + " fps", 10, 20)
 	}
-	var point1 = new Object()
-	for (var i = 0; i < sparks.length; ++i) {
-		var point = rasterizePoint(sparks[i].x, sparks[i].y, sparks[i].z)
-		if (point.d != -1) {
-			var size = (sparks[i].radius * 200) / (1 + point.d)
-			if (sparks[i].alpha < 0) sparks[i].alpha = 0
-			if (sparks[i].trail.length) {
-				point1.x = point.x
-				point1.y = point.y
-				switch (sparks[i].img) {
-					case sparkPics[0]:
-						ctx.strokeStyle = "#f84"
-						break
-					case sparkPics[1]:
-						ctx.strokeStyle = "#84f"
-						break
-					case sparkPics[2]:
-						ctx.strokeStyle = "#8ff"
-						break
-					case sparkPics[3]:
-						ctx.strokeStyle = "#fff"
-						break
-					case sparkPics[4]:
-						ctx.strokeStyle = "#4f8"
-						break
-					case sparkPics[5]:
-						ctx.strokeStyle = "#f44"
-						break
-					case sparkPics[6]:
-						ctx.strokeStyle = "#f84"
-						break
-					case sparkPics[7]:
-						ctx.strokeStyle = "#84f"
-						break
-					case sparkPics[8]:
-						ctx.strokeStyle = "#fff"
-						break
-					case sparkPics[9]:
-						ctx.strokeStyle = "#44f"
-						break
-				}
-				for (var j = sparks[i].trail.length - 1; j >= 0; --j) {
-					var point2 = rasterizePoint(sparks[i].trail[j].x, sparks[i].trail[j].y, sparks[i].trail[j].z)
-					if (point2.d != -1) {
-						ctx.globalAlpha = ((j / sparks[i].trail.length) * sparks[i].alpha) / 2
-						ctx.beginPath()
-						ctx.moveTo(point1.x, point1.y)
-						ctx.lineWidth = 1 + (sparks[i].radius * 10) / (sparks[i].trail.length - j) / (1 + point2.d)
-						ctx.lineTo(point2.x, point2.y)
-						ctx.stroke()
-						point1.x = point2.x
-						point1.y = point2.y
-					}
-				}
-			}
-			ctx.globalAlpha = sparks[i].alpha
-			ctx.drawImage(sparks[i].img, point.x - size / 2, point.y - size / 2, size, size)
-		}
-	}
+
+	//done rendering, wait for frame
+	animationFrameId = window.requestAnimFrame(render)
 }
 
-var animationFrameId = null
-function frame() {
-	console.log("canvas09")
-	if (frames > 100000) {
-		seedTimer = 0
-		frames = 0
-	}
-	frames++
-	draw()
-	doLogic()
-	animationFrameId = requestAnimationFrame(frame)
-}
-
-var dom
+let dom
 export function drawCanvas(domId) {
 	dom = document.getElementById(domId)
 	dom.appendChild(canvas)
-	dom.style.backgroundColor = "#000"
-	initVars(domId)
-	frame()
-	window.addEventListener("resize", resizeFunc)
+	//does not seem to impact performance
+	window.addEventListener("resize", resize)
+	init()
+	render()
 }
 export function clearFunc() {
 	animationFrameId && cancelAnimationFrame(animationFrameId)
-	window.removeEventListener("resize", resizeFunc)
+	window.removeEventListener("resize", resize)
 	console.log("animationFrameId", animationFrameId)
-}
-function resizeFunc() {
-	canvas.width = dom.offsetWidth
-	canvas.height = dom.offsetHeight
-	cx = canvas.width / 2
-	cy = canvas.height / 2
 }
