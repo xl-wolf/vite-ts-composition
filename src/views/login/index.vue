@@ -64,7 +64,7 @@ tags.clearTags();
 const clearRef = ref()
 const setCanvasBg = () => {
   // @ts-ignore
-  import("./plugins/canvas10.js").then(({ drawCanvas, clearFunc }) => {
+  import("./plugins/canvas04.js").then(({ drawCanvas, clearFunc }) => {
     clearRef.value = clearFunc
     drawCanvas("form-bg")
   })

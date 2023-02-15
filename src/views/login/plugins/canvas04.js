@@ -1,256 +1,125 @@
-export const drawCanvas = (domId) => {
-	const dom = document.getElementById(domId)
-	dom.appendChild(canvas)
-	dom.style.backgroundColor = "#000"
-	render()
+
+//宇宙特效
+"use strict";
+var canvas = document.createElement('canvas'),
+	ctx = canvas.getContext('2d'),
+	hue = 217,
+	count = 0,
+	stars = [],
+	maxStars = 1300;//星星数量
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+var canvas2 = document.createElement('canvas'),
+	ctx2 = canvas2.getContext('2d');
+canvas2.width = 100;
+canvas2.height = 100;
+var half = canvas2.width / 2,
+	gradient2 = ctx2.createRadialGradient(half, half, 0, half, half, half);
+gradient2.addColorStop(0.025, '#CCC');
+gradient2.addColorStop(0.1, 'hsl(' + hue + ', 61%, 33%)');
+gradient2.addColorStop(0.25, 'hsl(' + hue + ', 64%, 6%)');
+gradient2.addColorStop(1, 'transparent');
+
+ctx2.fillStyle = gradient2;
+ctx2.beginPath();
+ctx2.arc(half, half, half, 0, Math.PI * 2);
+ctx2.fill();
+
+// End cache
+
+function random(min, max) {
+	if (arguments.length < 2) {
+		max = min;
+		min = 0;
+	}
+
+	if (min > max) {
+		var hold = max;
+		max = min;
+		min = hold;
+	}
+
+	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-export const clearFunc = () => {
+
+function maxOrbit(x, y) {
+	var max = Math.max(x, y),
+		diameter = Math.round(Math.sqrt(max * max + max * max));
+	return diameter / 2;
+	//星星移动范围，值越大范围越小，
+}
+
+var Star = function () {
+
+
+	this.orbitRadius = random(maxOrbit(window.innerWidth, window.innerHeight));
+	this.radius = random(60, this.orbitRadius) / 8;
+	//星星大小
+	this.orbitX = window.innerWidth / 2;
+	this.orbitY = window.innerHeight / 2;
+	this.timePassed = random(0, maxStars);
+	this.speed = random(this.orbitRadius) / 50000;
+	//星星移动速度
+	this.alpha = random(2, 10) / 10;
+
+	count++;
+	stars[count] = this;
+}
+
+Star.prototype.draw = function () {
+	var x = Math.sin(this.timePassed) * this.orbitRadius + this.orbitX,
+		y = Math.cos(this.timePassed) * this.orbitRadius + this.orbitY,
+		twinkle = random(10);
+
+	if (twinkle === 1 && this.alpha > 0) {
+		this.alpha -= 0.05;
+	} else if (twinkle === 2 && this.alpha < 1) {
+		this.alpha += 0.05;
+	}
+
+	ctx.globalAlpha = this.alpha;
+	ctx.drawImage(canvas2, x - this.radius / 2, y - this.radius / 2, this.radius, this.radius);
+	this.timePassed += this.speed;
+}
+
+function genStar() {
+	for (var i = 0; i < maxStars; i++) {
+		new Star();
+	}
+}
+
+let animationFrameId
+function animation() {
+	ctx.globalCompositeOperation = 'source-over';
+	ctx.globalAlpha = 0.5; //尾巴
+	ctx.fillStyle = 'hsla(' + hue + ', 64%, 6%, 2)';
+	ctx.fillRect(0, 0, window.innerWidth, window.innerHeight)
+
+	ctx.globalCompositeOperation = 'lighter';
+	count <= maxStars && genStar()
+	for (var i = 1, l = stars.length; i < l; i++) {
+		stars[i].draw();
+	};
+	console.log('canvas04')
+	animationFrameId = window.requestAnimationFrame(animation);
+}
+
+window.addEventListener('resize', function () {
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	clearFunc()
+	stars = []
+	count = 0
+	animation()
+});
+
+export function drawCanvas(domId) {
+	var dom = document.getElementById(domId);
+	animation();
+	dom.appendChild(canvas);
+}
+export function clearFunc() {
 	animationFrameId && cancelAnimationFrame(animationFrameId)
 	console.log("animationFrameId", animationFrameId)
 }
-var canvas = document.createElement("canvas")
-
-;(function() {
-	if (!canvas || !canvas.getContext) {
-		return console.log("canvas is invalid!")
-	}
-})()
-
-/********************
-    Random Number
-********************/
-
-function rand(min, max) {
-	return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
-/********************
-    Var
-********************/
-
-var ctx = canvas.getContext("2d")
-var X = (canvas.width = window.innerWidth)
-var Y = (canvas.height = window.innerHeight)
-var mouseX = null
-var mouseY = null
-// spark
-var rad = (Math.PI * 2) / 8
-var sparks = []
-var sparkNum = 800
-var time = 0
-var color = "hsl(" + Math.sin((time * Math.PI) / 180) * 360 + ", 80%, 60%)"
-
-/********************
-    Animation
-********************/
-
-window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame
-
-/********************
-    Stick
-********************/
-
-function stickDraw(xPosi) {
-	ctx.save()
-	ctx.lineWidth = 4
-	ctx.strokeStyle = color
-	ctx.beginPath()
-	ctx.moveTo(X * xPosi, 0)
-	ctx.lineTo(X * xPosi, Y / 2)
-	ctx.stroke()
-	ctx.restore()
-}
-
-/********************
-    Fire Ball
-********************/
-
-var fireBallNum = 1
-var fireBalls = []
-
-const FireBall = function(ctx, x, y) {
-	this.ctx = ctx
-	this.init(x, y)
-}
-
-FireBall.prototype.init = function(x, y) {
-	this.x = x
-	this.y = y
-	this.r = 10
-	this.ga = Math.random()
-	this.flg = false
-	this.v = {
-		y: 1,
-	}
-}
-
-FireBall.prototype.draw = function() {
-	var ctx = this.ctx
-	ctx.save()
-	ctx.globalAlpha = this.ga
-	ctx.globalCompositeOperation = "lighter"
-	ctx.fillStyle = color
-	for (var i = 0; i < 10; i++) {
-		ctx.beginPath()
-		ctx.arc(this.x, this.y, rand(5, 10), 0, Math.PI * 2, false)
-		ctx.fill()
-	}
-	ctx.restore()
-}
-
-FireBall.prototype.fall = function(i) {
-	if (this.y > Y - this.r) {
-		this.y = Y - this.r
-		this.v.y *= -1.1
-		this.flg = true
-	} else {
-		this.v.y += 0.05
-		this.y += this.v.y
-	}
-	if (this.y < Y / 2 && this.flg === true) {
-		this.y = Y / 2
-		this.v.y = 1
-		for (var i = 0; i < sparkNum; i++) {
-			var s1 = new Spark(ctx, X / 4, Y / 2, 0)
-			var s2 = new Spark(ctx, (X / 4) * 3, Y / 2, 0)
-			sparks.push(s1, s2)
-		}
-	}
-}
-
-FireBall.prototype.render = function(i) {
-	if (sparks.length === 0) {
-		this.fall(i)
-	} else {
-		this.signal = false
-	}
-	this.draw()
-}
-
-for (var i = 0; i < fireBallNum; i++) {
-	var f1 = new FireBall(ctx, X / 4, Y / 2)
-	var f2 = new FireBall(ctx, (X / 4) * 3, Y / 2)
-	fireBalls.push(f1, f2)
-}
-
-/********************
-    Spark
-********************/
-
-const Spark = function(ctx, x, y, cl) {
-	this.ctx = ctx
-	this.init(x, y, cl)
-}
-
-Spark.prototype.init = function(x, y, cl) {
-	this.x = x
-	this.y = y
-	this.cl = cl
-	this.r = rand(5, 40)
-	Math.random() < 0.8 ? (this.l = rand(0, 50)) : (this.l = rand(100, 150))
-	this.ga = Math.random() * Math.random()
-	this.v = {
-		x: Math.cos((rand(0, 360) * Math.PI) / 180) * Math.random() * 8,
-		y: Math.sin((rand(0, 360) * Math.PI) / 180) * Math.random() * 6,
-	}
-}
-
-Spark.prototype.draw = function() {
-	var ctx = this.ctx
-	ctx.save()
-	ctx.globalAlpha = this.ga
-	ctx.globalCompositeOperation = "lighter"
-	ctx.strokeStyle = color
-	for (var i = 1; i < 9; i++) {
-		ctx.beginPath()
-		ctx.moveTo(this.x, this.y)
-		ctx.lineTo(Math.cos(rad * i) * this.r + this.x, Math.sin(rad * i) * this.r + this.y)
-		ctx.stroke()
-	}
-	ctx.restore()
-}
-
-Spark.prototype.updateParams = function(i) {
-	// life
-	this.l -= 1
-	if (this.l < 0) {
-		this.cl++
-		this.init(X / 4, Y / 2, this.cl)
-	}
-	if (this.cl > 10) {
-		sparks.splice(i - 1, 1)
-	}
-}
-
-Spark.prototype.updatePosition = function() {
-	this.v.y += 0.05
-	this.x += this.v.x
-	this.y += this.v.y
-}
-
-Spark.prototype.render = function(i) {
-	this.updateParams(1)
-	this.updatePosition()
-	this.draw()
-}
-
-for (var i = 0; i < sparkNum; i++) {
-	var s1 = new Spark(ctx, X / 4, Y / 2, 0)
-	var s2 = new Spark(ctx, (X / 4) * 3, Y / 2, 0)
-	sparks.push(s1, s2)
-}
-
-/********************
-    Render
-********************/
-let animationFrameId = null
-function render() {
-	console.log("canvas04")
-	ctx.clearRect(0, 0, X, Y)
-	stickDraw(1 / 4)
-	stickDraw(3 / 4)
-	time += 0.1
-	color = "hsl(" + Math.sin((time * Math.PI) / 180) * 360 + ", 80%, 60%)"
-	for (var i = 0; i < fireBalls.length; i++) {
-		fireBalls[i].render(i)
-	}
-	for (var i = 0; i < sparks.length; i++) {
-		sparks[i].render(i)
-	}
-
-	animationFrameId = requestAnimationFrame(render)
-}
-
-/********************
-        Event
-      ********************/
-
-function onResize() {
-	X = canvas.width = window.innerWidth
-	Y = canvas.height = window.innerHeight
-	fireBalls = []
-	sparks = []
-	for (var i = 0; i < sparkNum; i++) {
-		var s1 = new Spark(ctx, X / 4, Y / 2, 0)
-		var s2 = new Spark(ctx, (X / 4) * 3, Y / 2, 0)
-		sparks.push(s1, s2)
-	}
-	for (var i = 0; i < fireBallNum; i++) {
-		var f1 = new FireBall(ctx, X / 4, Y / 2)
-		var f2 = new FireBall(ctx, (X / 4) * 3, Y / 2)
-		fireBalls.push(f1, f2)
-	}
-}
-
-window.addEventListener("resize", function() {
-	onResize()
-})
-
-window.addEventListener(
-	"mousemove",
-	function(e) {
-		mouseX = e.clientX
-		mouseY = e.clientY
-	},
-	false
-)
