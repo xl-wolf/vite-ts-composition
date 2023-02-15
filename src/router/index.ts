@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
+import { pagePermission } from '../permissionConfig';
 import { usePermissStore } from '../store/permiss';
 import Home from '../views/home.vue';
 
@@ -11,86 +12,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: Home,
-    children: [
-      {
-        path: '/dashboard',
-        name: 'dashboard',
-        meta: {
-          title: '系统首页',
-          permiss: '系统首页',
-        },
-        component: () => import(/* webpackChunkName: "dashboard" */ '../views/dashboard.vue'),
-      },
-      // 表格目录
-      {
-        path: '/table',
-        name: 'basetable',
-        meta: {
-          title: '表格',
-          permiss: '表格',
-        },
-        component: () => import(/* webpackChunkName: "table" */ '../views/table/table.vue'),
-      },
-      {
-        path: '/export',
-        name: 'export',
-        meta: {
-          title: '导出Excel',
-          permiss: '导出Excel',
-        },
-        component: () => import(/* webpackChunkName: "export" */ '../views/table/export.vue'),
-      },
-      {
-        path: '/import',
-        name: 'import',
-        meta: {
-          title: '导入Excel',
-          permiss: '导入Excel',
-        },
-        component: () => import(/* webpackChunkName: "import" */ '../views/table/import.vue'),
-      },
-
-      // 表单
-      {
-        path: '/form',
-        name: 'baseform',
-        meta: {
-          title: '表单',
-          permiss: '表单',
-        },
-        component: () => import(/* webpackChunkName: "form" */ '../views/form/form.vue'),
-      },
-      {
-        path: '/upload',
-        name: 'upload',
-        meta: {
-          title: '文件上传',
-          permiss: '文件上传',
-        },
-        component: () => import(/* webpackChunkName: "upload" */ '../views/form/upload.vue'),
-      },
-      // 自定义图标
-      {
-        path: '/icon',
-        name: 'icon',
-        meta: {
-          title: '自定义图标',
-          permiss: '自定义图标',
-        },
-        component: () => import(/* webpackChunkName: "icon" */ '../views/icon.vue'),
-      },
-      // 权限管理
-      {
-        path: '/permission',
-        name: 'permission',
-        meta: {
-          title: '权限管理',
-          permiss: '权限管理',
-        },
-        component: () => import(/* webpackChunkName: "permission" */ '../views/permission.vue'),
-      },
-
-    ],
+    children: pagePermission.map(menuitem => { return menuitem }),
   },
   {
     path: '/login',

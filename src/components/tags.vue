@@ -34,9 +34,7 @@ import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
-const isActive = (path: string) => {
-	return path === route.fullPath;
-};
+const isActive = (path: string) => path === route.fullPath
 
 const tags = useTagsStore();
 // 关闭单个标签
@@ -50,7 +48,6 @@ const closeTags = (index: number) => {
 		router.push('/');
 	}
 };
-
 // 设置标签
 const setTags = (route: any) => {
 	const isExist = tags.list.some(item => item.path === route.fullPath);

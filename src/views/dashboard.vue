@@ -1,107 +1,108 @@
 <template>
-	<div>
-		<el-row :gutter="20">
-			<el-col :span="8">
-				<el-card shadow="hover" class="mgb20" style="height: 252px">
-					<div class="user-info">
-						<el-avatar :size="120" :src="imgurl" />
-						<div class="user-info-cont">
-							<div class="user-info-name">{{ name }}</div>
-							<div>{{ role }}</div>
-						</div>
+	<el-row :gutter="20">
+		<el-col :span="8">
+			<el-card shadow="hover" class="mgb20" style="height: 252px">
+				<div class="user-info">
+					<el-avatar :size="120" :src="imgurl" />
+					<div class="user-info-cont">
+						<div class="user-info-name">{{ name }}</div>
+						<div>{{ role }}</div>
 					</div>
-					<div class="user-info-list">
-						上次登录时间：
-						<span>2022-12-12</span>
+				</div>
+				<div class="user-info-list">
+					上次登录时间：
+					<span>2022-12-12</span>
+				</div>
+				<div class="user-info-list">
+					上次登录地点：
+					<span>杭州</span>
+				</div>
+			</el-card>
+			<el-card shadow="hover" style="height: 252px">
+				<template #header>
+					<div class="clearfix">
+						<span>语言详情</span>
 					</div>
-					<div class="user-info-list">
-						上次登录地点：
-						<span>杭州</span>
+				</template>
+				Vue
+				<el-progress :percentage="79.4" color="#42b983"></el-progress>
+				TypeScript
+				<el-progress :percentage="14" color="#f1e05a"></el-progress>
+				CSS
+				<el-progress :percentage="5.6"></el-progress>
+				HTML
+				<el-progress :percentage="1" color="#f56c6c"></el-progress>
+			</el-card>
+		</el-col>
+		<el-col :span="16">
+			<el-row :gutter="20" class="mgb20">
+				<el-col :span="8">
+					<el-card shadow="hover" :body-style="{ padding: '0px' }">
+						<div class="grid-content grid-con-1">
+							<el-icon class="grid-con-icon">
+								<User />
+							</el-icon>
+							<div class="grid-cont-right">
+								<div class="grid-num">1234</div>
+								<div>用户访问量</div>
+							</div>
+						</div>
+					</el-card>
+				</el-col>
+				<el-col :span="8">
+					<el-card shadow="hover" :body-style="{ padding: '0px' }">
+						<div class="grid-content grid-con-2">
+							<el-icon class="grid-con-icon">
+								<ChatDotRound />
+							</el-icon>
+							<div class="grid-cont-right">
+								<div class="grid-num">321</div>
+								<div>系统消息</div>
+							</div>
+						</div>
+					</el-card>
+				</el-col>
+				<el-col :span="8">
+					<el-card shadow="hover" :body-style="{ padding: '0px' }">
+						<div class="grid-content grid-con-3">
+							<el-icon class="grid-con-icon">
+								<Goods />
+							</el-icon>
+							<div class="grid-cont-right">
+								<div class="grid-num">5000</div>
+								<div>商品数量</div>
+							</div>
+						</div>
+					</el-card>
+				</el-col>
+			</el-row>
+			<el-card shadow="hover" style="height: 403px">
+				<template #header>
+					<div class="clearfix">
+						<span>待办事项</span>
+						<el-button style="float: right; padding: 3px 0" text>添加</el-button>
 					</div>
-				</el-card>
-				<el-card shadow="hover" style="height: 252px">
-					<template #header>
-						<div class="clearfix">
-							<span>语言详情</span>
-						</div>
-					</template>
-					Vue
-					<el-progress :percentage="79.4" color="#42b983"></el-progress>
-					TypeScript
-					<el-progress :percentage="14" color="#f1e05a"></el-progress>
-					CSS
-					<el-progress :percentage="5.6"></el-progress>
-					HTML
-					<el-progress :percentage="1" color="#f56c6c"></el-progress>
-				</el-card>
-			</el-col>
-			<el-col :span="16">
-				<el-row :gutter="20" class="mgb20">
-					<el-col :span="8">
-						<el-card shadow="hover" :body-style="{ padding: '0px' }">
-							<div class="grid-content grid-con-1">
-								<el-icon class="grid-con-icon"><User /></el-icon>
-								<div class="grid-cont-right">
-									<div class="grid-num">1234</div>
-									<div>用户访问量</div>
-								</div>
-							</div>
-						</el-card>
-					</el-col>
-					<el-col :span="8">
-						<el-card shadow="hover" :body-style="{ padding: '0px' }">
-							<div class="grid-content grid-con-2">
-								<el-icon class="grid-con-icon"><ChatDotRound /></el-icon>
-								<div class="grid-cont-right">
-									<div class="grid-num">321</div>
-									<div>系统消息</div>
-								</div>
-							</div>
-						</el-card>
-					</el-col>
-					<el-col :span="8">
-						<el-card shadow="hover" :body-style="{ padding: '0px' }">
-							<div class="grid-content grid-con-3">
-								<el-icon class="grid-con-icon"><Goods /></el-icon>
-								<div class="grid-cont-right">
-									<div class="grid-num">5000</div>
-									<div>商品数量</div>
-								</div>
-							</div>
-						</el-card>
-					</el-col>
-				</el-row>
-				<el-card shadow="hover" style="height: 403px">
-					<template #header>
-						<div class="clearfix">
-							<span>待办事项</span>
-							<el-button style="float: right; padding: 3px 0" text>添加</el-button>
-						</div>
-					</template>
+				</template>
 
-					<el-table :show-header="false" :data="todoList" style="width: 100%">
-						<el-table-column width="40">
-							<template #default="scope">
-								<el-checkbox v-model="scope.row.status"></el-checkbox>
-							</template>
-						</el-table-column>
-						<el-table-column>
-							<template #default="scope">
-								<div
-									class="todo-item"
-									:class="{
-										'todo-item-del': scope.row.status
-									}"
-								>
-									{{ scope.row.title }}
-								</div>
-							</template>
-						</el-table-column>
-					</el-table>
-				</el-card>
-			</el-col>
-		</el-row>
-	</div>
+				<el-table :show-header="false" :data="todoList" style="width: 100%">
+					<el-table-column width="40">
+						<template #default="scope">
+							<el-checkbox v-model="scope.row.status"></el-checkbox>
+						</template>
+					</el-table-column>
+					<el-table-column>
+						<template #default="scope">
+							<div class="todo-item" :class="{
+								'todo-item-del': scope.row.status
+							}">
+								{{ scope.row.title }}
+							</div>
+						</template>
+					</el-table-column>
+				</el-table>
+			</el-card>
+		</el-col>
+	</el-row>
 </template>
 
 <script setup lang="ts" name="dashboard">

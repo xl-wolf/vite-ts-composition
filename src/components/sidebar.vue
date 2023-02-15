@@ -2,8 +2,8 @@
   <div class="sidebar">
     <el-menu class="sidebar-el-menu" :default-active="onRoutes" :collapse="sidebar.collapse" background-color="#324157"
       text-color="#bfcbd9" active-text-color="#20a0ff" unique-opened router>
-      <template v-for="item in items">
-        <template v-if="item.subs">
+      <template v-for="item in pagePermission" :key="item.index">
+        <!-- <template v-if="item.subs">
           <el-sub-menu :index="item.index" :key="item.index" v-permiss="item.permiss">
             <template #title>
               <el-icon>
@@ -12,20 +12,20 @@
               <span>{{ item.title }}</span>
             </template>
             <template v-for="subItem in item.subs">
-              <el-menu-item :index="subItem.index" v-permiss="subItem.permiss">
-                {{ subItem.title }}
+              <el-menu-item :index="subItem.index" v-permiss="subitem.permiss">
+                {{ subitem.title }}
               </el-menu-item>
             </template>
           </el-sub-menu>
-        </template>
-        <template v-else>
-          <el-menu-item :index="item.index" :key="item.index" v-permiss="item.permiss">
-            <el-icon>
-              <component :is="item.icon"></component>
-            </el-icon>
-            <template #title>{{ item.title }}</template>
-          </el-menu-item>
-        </template>
+        </template> -->
+        <!-- <template v-else> -->
+        <el-menu-item :index="item.index" v-permiss="item.permiss">
+          <el-icon>
+            <component :is="item.icon"></component>
+          </el-icon>
+          <template #title>{{ item.title }}</template>
+        </el-menu-item>
+        <!-- </template> -->
       </template>
     </el-menu>
   </div>
@@ -35,74 +35,10 @@
 import { computed } from 'vue';
 import { useSidebarStore } from '../store/sidebar';
 import { useRoute } from 'vue-router';
-
-const items = [
-  {
-    icon: 'Odometer',
-    index: '/dashboard',
-    title: '系统首页',
-    permiss: '系统首页',
-  },
-  {
-    icon: 'Edit',
-    index: '1',
-    title: '表单',
-    permiss: '表单',
-    subs: [
-      {
-        index: '/form',
-        title: '基本表单',
-        permiss: '基本表单',
-      },
-      {
-        index: '/upload',
-        title: '文件上传',
-        permiss: '文件上传',
-      },
-    ],
-  },
-  {
-    icon: 'Calendar',
-    index: '2',
-    title: '表格',
-    permiss: '表格',
-    subs: [
-      {
-        index: '/table',
-        title: '基础表格',
-        permiss: '基础表格',
-      },
-      {
-        index: '/import',
-        title: '导入Excel',
-        permiss: '导入Excel',
-      },
-      {
-        index: '/export',
-        title: '导出Excel',
-        permiss: '导出Excel',
-      },
-    ],
-  },
-  {
-    icon: 'Setting',
-    index: '/icon',
-    title: '自定义图标',
-    permiss: '自定义图标',
-  },
-  {
-    icon: 'Warning',
-    index: '/permission',
-    title: '权限管理',
-    permiss: '权限管理',
-  },
-];
+import { pagePermission } from '../permissionConfig';
 
 const route = useRoute();
-const onRoutes = computed(() => {
-  return route.path;
-});
-
+const onRoutes = computed(() => route.path);
 const sidebar = useSidebarStore();
 </script>
 
