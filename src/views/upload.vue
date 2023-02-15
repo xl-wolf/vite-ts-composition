@@ -20,7 +20,8 @@
       </el-popover>
       <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有所有类型的表单都上传成功后才可以生成表格">
         <template #reference>
-          <el-button type="primary" @click="renderTable(resList)" :loading="geningtable">生成表格</el-button>
+          <el-button type="primary" @click="genTable(resList)" :disabled="disableGenTable"
+            :loading="geningtable">生成表格</el-button>
         </template>
       </el-popover>
     </div>
@@ -281,17 +282,21 @@ const httpRequest = async () => {
     resList.value = tmpresList
     // 此时允许用户生成表格
     cangentable.value = true
+    disableGenTable.value = false
+    // 重新上传表格后需要重置表格
+    tableData.value = []
   }
 };
 
 // 大数据情况下模拟分页加载
 const tableData = ref<TableItem[]>([]);
 const cangentable = ref(false)
+const disableGenTable = ref(false)
 const geningtable = ref(false)
 let start = 0;
 let offset = 30;
 const loadingContainer = document.body
-const renderTable = (list: any[]) => {
+const genTable = (list: any[]) => {
   if (!cangentable.value) return ElMessage.error('请先上传所有类型的表格！')
   showLoading(loadingContainer, ['#409eff', '#409eff', '#409eff', '#409eff'])
   geningtable.value = true
@@ -303,12 +308,13 @@ const renderTable = (list: any[]) => {
       hideLoading(loadingContainer)
       // console.log(tableData.value, 'tableData.value')
       geningtable.value = false
+      disableGenTable.value = true
       candownload.value = Array.from(new Set(uploadedFileType)).length === 4
       clearTimeout(timer)
       start = 0;
       offset = 30;
     } else {
-      renderTable(list)
+      genTable(list)
     }
   }, 200);
 }
