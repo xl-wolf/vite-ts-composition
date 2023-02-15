@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
+import { pagePermission } from '../permissionConfig';
 
 interface ObjectList {
   [key: string]: string[];
 }
-export const adminList = ['系统首页', '文件上传', '导入Excel', '导出Excel', '自定义图标', '权限管理',]
+export const adminList = pagePermission.map(pagecfg => pagecfg.permiss)
 // 没权限的页面需要设成空字符串方便设置权限
 const userPermissConfig = ['文件上传']
 export const userList = adminList.map(permiss => {
