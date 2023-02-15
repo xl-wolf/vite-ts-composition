@@ -70,7 +70,7 @@ const setCanvasBg = () => {
   })
 }
 onMounted(setCanvasBg)
-// onUnmounted(() => clearRef.value())
+onUnmounted(() => clearRef.value())
 
 </script>
 
