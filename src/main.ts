@@ -5,7 +5,6 @@ import App from './App.vue';
 import router from './router';
 import { usePermissStore } from './store/permiss';
 import 'element-plus/dist/index.css';
-import './assets/styles/icon.css';
 import './assets/styles/google-scrollbar.less';
 
 const app = createApp(App);

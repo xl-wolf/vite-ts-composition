@@ -4,14 +4,14 @@
       <div class="ms-title">后台管理系统</div>
       <el-form :model="loginInfo" label-width="0px" class="ms-content">
         <el-form-item prop="username">
-          <el-input v-model="loginInfo.userName" placeholder="username">
+          <el-input v-model="loginInfo.userName" placeholder="输入用户名">
             <template #prepend>
               <el-button :icon="User"></el-button>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item prop="password">
-          <el-input type="password" placeholder="password" v-model="loginInfo.password" @keyup.enter="submitForm">
+          <el-input type="password" placeholder="输入密码" v-model="loginInfo.password" @keyup.enter="submitForm">
             <template #prepend>
               <el-button :icon="Lock"></el-button>
             </template>
@@ -36,8 +36,8 @@ import { LoginInfo, loginApi } from '../../api/user';
 
 
 const loginInfo = reactive<LoginInfo>({
-  userName: 'hq',
-  password: '123456'
+  userName: '',
+  password: ''
 });
 
 const router = useRouter();
@@ -56,12 +56,10 @@ const submitForm = () => {
     ElMessage.error('登录失败');
     console.log(err)
   })
-
 };
 
 const tags = useTagsStore();
 tags.clearTags();
-
 
 const clearRef = ref()
 const setCanvasBg = () => {

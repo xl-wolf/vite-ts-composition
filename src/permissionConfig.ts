@@ -72,21 +72,6 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
     },
     {
         // 侧边栏配置项
-        icon: 'Setting',
-        index: '/icon',
-        title: '自定义图标',
-        permiss: '自定义图标',
-        // 路由的配置项
-        path: '/icon',
-        meta: {
-            title: '自定义图标',
-            permiss: '自定义图标',
-        },
-        name: 'icon',
-        component: () => import(/* webpackChunkName: "icon" */ './views/icon.vue'),
-    },
-    {
-        // 侧边栏配置项
         icon: 'Warning',
         index: '/permission',
         title: '权限管理',
