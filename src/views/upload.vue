@@ -25,11 +25,11 @@
         </template>
       </el-popover>
     </div>
-    <el-table :data="tableData" border stripe class="table" max-height="550">
+    <!-- <el-table :data="tableData" border stripe class="table" max-height="550">
       <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
         tooltip-effect="dark" v-for="column in columnFiledList"
         :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
-    </el-table>
+    </el-table> -->
   </div>
 </template>
 
@@ -40,6 +40,7 @@ import { nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
 // @ts-ignore
 import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
+const loadingContainer = document.body
 
 const columnFiledList: { [key: string]: string }[] = [
   { prop: 'number', label: '序号' },
@@ -88,10 +89,11 @@ interface TableItem {
 }
 
 const canUploadFile = (file: UploadRawFile) => {
-  if (file.size / 1024 / 1024 > 2) {
+  const fileSizeLimit = 20
+  if (file.size / 1024 / 1024 > fileSizeLimit) {
     return {
       status: false,
-      msg: '文件大小不能超过2MB！'
+      msg: `文件大小不能超过${fileSizeLimit}MB！`
     }
   }
   if (uploadFiles.value.some((uploadedfile: UploadRawFile) => file.name === uploadedfile.name)) {
@@ -113,12 +115,15 @@ const uploadFiles = ref<UploadRawFile[]>([])
 const beforeUpload: UploadProps['beforeUpload'] = async (rawFile: UploadRawFile) => {
   // 未通过校验则弹窗提示
   const { status, msg } = canUploadFile(rawFile)
+
   if (!status) {
     ElMessage.warning(msg)
     return false
   }
+  showLoading(loadingContainer, ['#409eff', '#409eff', '#409eff', '#409eff'])
   // 校验通过后的操作
   importList.value = await analysisExcel(rawFile);
+  hideLoading(loadingContainer)
   uploadFiles.value.push(rawFile)
   nextTick(scrollToDomBottom)
 
@@ -158,7 +163,8 @@ const resList = ref<any>([])
 // 重复的订单编号列表
 const duplicateOrderList = ref<any>([])
 const httpRequest = async () => {
-  if (importList.value.length > 5000) return ElMessage.warning('表格数据不得多于5000条')
+  const rowLimit = 100000
+  if (importList.value.length > rowLimit) return ElMessage.warning(`表格数据不得多于${rowLimit}条`)
 
   let ordertype = ''
   const list = importList.value.map((item: any, index: number) => {
@@ -280,6 +286,8 @@ const httpRequest = async () => {
     tmpresList.forEach((item, index) => item.number = index + 1)
     // 把函数内的临时内存数据tmpresList持久化给页面级别的变量resList
     resList.value = tmpresList
+    console.log(resList.value.length, '表格长度')
+    console.log(duplicateOrderList.value.length, '重复订单的数量',duplicateOrderList.value)
     // 此时允许用户生成表格
     cangentable.value = true
     disableGenTable.value = false
@@ -294,8 +302,8 @@ const cangentable = ref(false)
 const disableGenTable = ref(false)
 const geningtable = ref(false)
 let start = 0;
-let offset = 30;
-const loadingContainer = document.body
+let offset = 500;
+
 const genTable = (list: any[]) => {
   if (!cangentable.value) return ElMessage.error('请先上传所有类型的表格！')
   showLoading(loadingContainer, ['#409eff', '#409eff', '#409eff', '#409eff'])
@@ -312,8 +320,9 @@ const genTable = (list: any[]) => {
       candownload.value = Array.from(new Set(uploadedFileType)).length === 4
       clearTimeout(timer)
       start = 0;
-      offset = 30;
+      offset = 500;
     } else {
+      console.log(start, 'start')
       genTable(list)
     }
   }, 200);
