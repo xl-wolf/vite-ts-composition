@@ -6,13 +6,6 @@
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
       </el-upload>
-      <div class="upload-file-list" v-if="uploadFiles.length">
-        <h3>已上传文件列表：</h3>
-        <div v-for="(uploadFile, index) in uploadFiles">
-          {{`${index + 1}、${uploadFile.name}`}}
-        </div>
-      </div>
-
       <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有生成表格之后才可使用下载功能">
         <template #reference>
           <el-button type="primary" @click="exportXlsx">导出Excel</el-button>
@@ -25,6 +18,15 @@
         </template>
       </el-popover>
     </div>
+
+    <div class="upload-file-list" v-if="uploadFiles.length">
+      <h3>已上传文件列表：</h3>
+      <div v-for="(uploadFile, index) in uploadFiles">
+        {{`${index + 1}、${uploadFile.name}`}}
+      </div>
+    </div>
+
+
     <!-- <el-table :data="tableData" border stripe class="table" max-height="550">
       <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
         tooltip-effect="dark" v-for="column in columnFiledList"
@@ -35,7 +37,7 @@
 
 <script setup lang="ts" name="import">
 import { ElButton, ElIcon, ElMessage, ElPopover, ElTable, ElTableColumn, ElUpload, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
-import { UploadFilled } from '@element-plus/icons-vue';
+import { UploadFilled, Close } from '@element-plus/icons-vue';
 import { nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
 // @ts-ignore
@@ -64,6 +66,11 @@ const columnFiledList: { [key: string]: string }[] = [
   { prop: 'salerepositoryrefund', label: '售后仓库退款金额' },
   { prop: 'profit', label: '利润' },
 ]
+// 删除文件
+const removeFile = (filename: string) => {
+  const idx = uploadFiles.value.findIndex(uploadFile => uploadFile.name === filename)
+  uploadFiles.value.splice(idx, 1)
+}
 
 interface TableItem {
   number: number,
@@ -152,7 +159,7 @@ const scrollToDomBottom = () => {
 }
 
 // 在内存中处理从上次的excel里面读取出来的数据
-const uploadedFileType: string[] = [] //表格的类型列表，付款单，收款单，售后单，源数据，少一个都无法使用生成表格和导出excel功能
+let uploadedFileType: string[] = [] //表格的类型列表，付款单，收款单，售后单，源数据，少一个都无法使用生成表格和导出excel功能
 // 各种excel的内存对象数据
 const tempysj: { [key: string]: any } = {}
 const tempfkd: { [key: string]: any } = {}
@@ -216,6 +223,7 @@ const httpRequest = async () => {
     }
   });
   uploadedFileType.push(ordertype)
+  uploadedFileType = [...new Set(uploadedFileType)]
   const existOrequalzero = (data: number) => data === 0 || data
   list.forEach((item: any) => {
     if (existOrequalzero(item.shouldpayfee)) {
@@ -261,63 +269,73 @@ const httpRequest = async () => {
 
   ElMessage.success(`上传${ordertype}成功`)
   // 全部表单都上传之后才可以允许生成表格
-  if (Array.from(new Set(uploadedFileType)).length === 4) {
-    const tmpresList: any[] = []
-    Object.values(tempysj).forEach(item => {
-      const shouldpayfee = tempfkd[item.orderNO]
-      const shouldgetfee = tempskd[item.orderNO]
-      const salecanalrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[0].slice(8) : tempshd[item.orderNO]
-      const salerepositoryrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[1] : tempshd[item.orderNO]
-      item = {
-        ...item,
-        ...{ shouldpayfee },
-        ...{ shouldgetfee },
-        ...{ salecanalrefund },
-        ...{ salerepositoryrefund },
-        ...{ profit: shouldgetfee - shouldpayfee - salecanalrefund + salerepositoryrefund },
-      }
-      tmpresList.push(item)
-    })
-    duplicateOrderList.value.forEach((duplicateOrder: any) => tmpresList.push({ orderNO: Object.values(duplicateOrder)[0] }))
-    // console.log(tmpresList, 'tmpresList')
-    // 根据订单编号给表格排序
-    tmpresList.sort((a, b) => a.orderNO.slice(1) - b.orderNO.slice(1))
-    // 给表格补上第一列的序号数据
-    tmpresList.forEach((item, index) => item.number = index + 1)
-    // 把函数内的临时内存数据tmpresList持久化给页面级别的变量resList
-    resList.value = tmpresList
-    console.log(resList.value.length, '表格长度')
-    console.log(duplicateOrderList.value.length, '重复订单的数量',duplicateOrderList.value)
-    // 此时允许用户生成表格
-    cangentable.value = true
-    disableGenTable.value = false
-    // 重新上传表格后需要重置表格
-    tableData.value = []
-  }
+  if (!canGenTable(false)) return
+
+  const tmpresList: any[] = []
+  Object.values(tempysj).forEach(item => {
+    const shouldpayfee = tempfkd[item.orderNO]
+    const shouldgetfee = tempskd[item.orderNO]
+    const salecanalrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[0].slice(8) : tempshd[item.orderNO]
+    const salerepositoryrefund = !Array.isArray(tempshd[item.orderNO]) ? tempshd[item.orderNO]?.split("售后仓库退款金额")[1] : tempshd[item.orderNO]
+    item = {
+      ...item,
+      ...{ shouldpayfee },
+      ...{ shouldgetfee },
+      ...{ salecanalrefund },
+      ...{ salerepositoryrefund },
+      ...{ profit: shouldgetfee - shouldpayfee - salecanalrefund + salerepositoryrefund },
+    }
+    tmpresList.push(item)
+  })
+  duplicateOrderList.value.forEach((duplicateOrder: any) => tmpresList.push({ orderNO: Object.values(duplicateOrder)[0] }))
+  // console.log(tmpresList, 'tmpresList')
+  // 根据订单编号给表格排序
+  tmpresList.sort((a, b) => a.orderNO.slice(1) - b.orderNO.slice(1))
+  // 给表格补上第一列的序号数据
+  tmpresList.forEach((item, index) => item.number = index + 1)
+  // 把函数内的临时内存数据tmpresList持久化给页面级别的变量resList
+  resList.value = tmpresList
+  console.log(resList.value.length, '表格长度')
+  console.log(duplicateOrderList.value.length, '重复订单的数量', duplicateOrderList.value)
+  // 此时允许用户生成表格
+  disableGenTable.value = false
+  // 重新上传表格后需要重置表格
+  tableData.value = []
+
 };
 
 // 大数据情况下模拟分页加载
 const tableData = ref<TableItem[]>([]);
-const cangentable = ref(false)
 const disableGenTable = ref(false)
 const geningtable = ref(false)
 let start = 0;
 let offset = 500;
 
+const canGenTable = (needToast = true) => {
+  const allFileType = ['收款单', '付款单', '售后单', '源数据']
+  for (let i = 0; i < allFileType.length; i++) {
+    if (!uploadedFileType.includes(allFileType[i])) {
+      needToast && ElMessage.error(`请先上传${allFileType[i]}，否则无法使用生成表格功能！`)
+      return false
+    }
+  }
+  return true
+}
 const genTable = (list: any[]) => {
-  if (!cangentable.value) return ElMessage.error('请先上传所有类型的表格！')
+  if (!canGenTable()) return
+
   showLoading(loadingContainer, ['#409eff', '#409eff', '#409eff', '#409eff'])
   geningtable.value = true
   const timer = setTimeout(() => {
     tableData.value = tableData.value.concat(list.slice(start, start + offset))
     start += offset
     if (tableData.value.length >= list.length) {
-      ElMessage.success('表格渲染完毕！')
+      ElMessage.success('生成表格成功！')
       hideLoading(loadingContainer)
       // console.log(tableData.value, 'tableData.value')
       geningtable.value = false
       disableGenTable.value = true
-      candownload.value = Array.from(new Set(uploadedFileType)).length === 4
+      candownload.value = uploadedFileType.length === 4
       clearTimeout(timer)
       start = 0;
       offset = 500;
@@ -385,16 +403,17 @@ const exportXlsx = () => {
     margin-right: 10px;
   }
 
-  .upload-file-list {
-    line-height: 32px;
-    min-width: 240px;
-    margin: 0 14px;
-    font-size: 14px;
-    color: rgba(0, 0, 0, 0.7);
-    flex: 1;
-    max-height: 184px;
-    overflow: auto;
-  }
+}
+
+.upload-file-list {
+  line-height: 32px;
+  min-width: 240px;
+  margin: 0 14px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+  flex: 1;
+  max-height: 300px;
+  overflow: auto;
 }
 
 .table {

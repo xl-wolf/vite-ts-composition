@@ -277,7 +277,7 @@ function init(domId) {
 	}
 	Build.prototype.anim = function() {
 		var anima = function() {
-			console.log("webgl05")
+			console.log("canvas11")
 			this.upd()
 			this.draw()
 			animationFrameId1 = requestAnimationFrame(anima)
