@@ -40,36 +40,51 @@ export const pagePermission: Array<permission & RouteRecordRaw> = [
         name: 'upload',
         component: () => import(/* webpackChunkName: "dashboard" */ './views/upload.vue')
     },
+    // {
+    //     // 侧边栏配置项
+    //     icon: 'Upload',
+    //     index: '/import',
+    //     title: '导入Excel',
+    //     permiss: '导入Excel',
+    //     // 路由的配置项
+    //     path: '/import',
+    //     meta: {
+    //         title: '导入Excel',
+    //         permiss: '导入Excel',
+    //     },
+    //     name: 'import',
+    //     component: () => import(/* webpackChunkName: "dashboard" */ './views/import.vue')
+    // },
+    // {
+    //     // 侧边栏配置项
+    //     icon: 'Download',
+    //     index: '/export',
+    //     title: '导出Excel',
+    //     permiss: '导出Excel',
+    //     // 路由的配置项
+    //     path: '/export',
+    //     meta: {
+    //         title: '导出Excel',
+    //         permiss: '导出Excel',
+    //     },
+    //     name: 'export',
+    //     component: () => import(/* webpackChunkName: "dashboard" */ './views/export.vue')
+    // },
     {
-        // 侧边栏配置项
-        icon: 'Upload',
-        index: '/import',
-        title: '导入Excel',
-        permiss: '导入Excel',
-        // 路由的配置项
-        path: '/import',
-        meta: {
-            title: '导入Excel',
-            permiss: '导入Excel',
-        },
-        name: 'import',
-        component: () => import(/* webpackChunkName: "dashboard" */ './views/import.vue')
-    },
-    {
-        // 侧边栏配置项
-        icon: 'Download',
-        index: '/export',
-        title: '导出Excel',
-        permiss: '导出Excel',
-        // 路由的配置项
-        path: '/export',
-        meta: {
-            title: '导出Excel',
-            permiss: '导出Excel',
-        },
-        name: 'export',
-        component: () => import(/* webpackChunkName: "dashboard" */ './views/export.vue')
-    },
+      // 侧边栏配置项
+      icon: 'List',
+      index: '/userList',
+      title: '用户列表',
+      permiss: '用户列表',
+      // 路由的配置项
+      path: '/userList',
+      meta: {
+          title: '用户列表',
+          permiss: '用户列表',
+      },
+      name: 'userList',
+      component: () => import(/* webpackChunkName: "userManage" */ './views/userManage/list.vue'),
+  },
     {
         // 侧边栏配置项
         icon: 'Warning',
