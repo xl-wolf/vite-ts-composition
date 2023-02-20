@@ -22,17 +22,17 @@
     <div class="upload-file-list" v-if="uploadFiles.length">
       <h3>已上传文件列表：</h3>
       <div v-for="(uploadFile, index) in uploadFiles">
-        {{`${index + 1}、${uploadFile.name}`}}
+        {{ `${index + 1}、${uploadFile.name}` }}
       </div>
     </div>
 
 
     <!-- <el-table :data="tableData" border stripe class="table" max-height="550">
-      <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
-        tooltip-effect="dark" v-for="column in columnFiledList"
-        :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
-    </el-table> -->
-  </div>
+                            <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
+                              tooltip-effect="dark" v-for="column in columnFiledList"
+                              :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
+                          </el-table> -->
+</div>
 </template>
 
 <script setup lang="ts" name="import">
@@ -173,23 +173,26 @@ const httpRequest = async () => {
   const rowLimit = 100000
   if (importList.value.length > rowLimit) return ElMessage.warning(`表格数据不得多于${rowLimit}条`)
 
+  const existOrequalzero = (data: number) => data === 0 || data
+
   let ordertype = ''
   const list = importList.value.map((item: any, index: number) => {
-    if (item['应付金额'] === 0 || item['应付金额']) {
+    if (!item['订单编号']) return {};
+    if (existOrequalzero(item['应付金额'])) {
       ordertype = '付款单'
       return {
         orderNO: item['订单编号'],
         shouldpayfee: item['应付金额'],
       }
     }
-    else if (item['应收金额'] === 0 || (item['应收金额'])) {
+    else if (existOrequalzero(item['应收金额'])) {
       ordertype = '收款单'
       return {
         orderNO: item['订单编号'],
         shouldgetfee: item['应收金额'],
       }
     }
-    else if ((item['售后渠道退款金额'] === 0 || item['售后渠道退款金额']) && (item['售后仓库退款金额'] === 0 || item['售后仓库退款金额'])) {
+    else if (existOrequalzero(item['售后渠道退款金额']) && existOrequalzero(item['售后仓库退款金额'])) {
       ordertype = '售后单'
       return {
         orderNO: item['订单编号'],
@@ -224,9 +227,10 @@ const httpRequest = async () => {
   });
   uploadedFileType.push(ordertype)
   uploadedFileType = [...new Set(uploadedFileType)]
-  const existOrequalzero = (data: number) => data === 0 || data
+  console.log('uploadedFileType', uploadedFileType)
+
   list.forEach((item: any) => {
-    if (existOrequalzero(item.shouldpayfee)) {
+    if (existOrequalzero(item.shouldpayfee) && item.orderNO) {
       if (!tempfkd[item.orderNO]) {
         if (item.orderNO)
           tempfkd[item.orderNO] = item.shouldpayfee
@@ -234,7 +238,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '付款单': item.orderNO })
       }
     }
-    else if (existOrequalzero(item.shouldgetfee)) {
+    else if (existOrequalzero(item.shouldgetfee) && item.orderNO) {
       if (!tempskd[item.orderNO]) {
         if (item.orderNO)
           if (item.orderNO)
@@ -243,7 +247,7 @@ const httpRequest = async () => {
         duplicateOrderList.value.push({ '收款单': item.orderNO })
       }
     }
-    else if (existOrequalzero(item.salecanalrefund) && existOrequalzero(item.salerepositoryrefund)) {
+    else if (existOrequalzero(item.salecanalrefund) && existOrequalzero(item.salerepositoryrefund) && item.orderNO) {
       if (!tempshd[item.orderNO]) {
         if (item.orderNO)
           tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
@@ -252,6 +256,7 @@ const httpRequest = async () => {
       }
     }
     else {
+      if (!item.orderNO || item.orderNO.trim().slice(0, 1).toUpperCase() !== 'W') { return console.log(`源数据无效订单编号：${item.orderNO}`) }
       if (!tempysj[item.orderNO]) {
         if (item.orderNO)
           tempysj[item.orderNO] = item
@@ -340,7 +345,6 @@ const genTable = (list: any[]) => {
       start = 0;
       offset = 500;
     } else {
-      console.log(start, 'start')
       genTable(list)
     }
   }, 200);
