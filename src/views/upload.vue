@@ -32,7 +32,7 @@
                               tooltip-effect="dark" v-for="column in columnFiledList"
                               :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
                           </el-table> -->
-</div>
+  </div>
 </template>
 
 <script setup lang="ts" name="import">
@@ -225,7 +225,7 @@ const httpRequest = async () => {
       };
     }
   });
-  uploadedFileType.push(ordertype)
+  ordertype && uploadedFileType.push(ordertype)
   uploadedFileType = [...new Set(uploadedFileType)]
   console.log('uploadedFileType', uploadedFileType)
 
@@ -317,7 +317,7 @@ let start = 0;
 let offset = 500;
 
 const canGenTable = (needToast = true) => {
-  const allFileType = ['收款单', '付款单', '售后单', '源数据']
+  const allFileType = ['收款单', '付款单', '源数据']
   for (let i = 0; i < allFileType.length; i++) {
     if (!uploadedFileType.includes(allFileType[i])) {
       needToast && ElMessage.error(`请先上传${allFileType[i]}，否则无法使用生成表格功能！`)
@@ -340,7 +340,7 @@ const genTable = (list: any[]) => {
       // console.log(tableData.value, 'tableData.value')
       geningtable.value = false
       disableGenTable.value = true
-      candownload.value = uploadedFileType.length === 4
+      candownload.value = uploadedFileType.length === 3
       clearTimeout(timer)
       start = 0;
       offset = 500;
