@@ -17,6 +17,11 @@
             :loading="geningtable">生成表格</el-button>
         </template>
       </el-popover>
+      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="点击清空已上传的文件">
+        <template #reference>
+          <el-button type="primary" @click="reset" :disabled="uploadFiles.length === 0">重新上传</el-button>
+        </template>
+      </el-popover>
     </div>
 
     <div class="upload-file-list" v-if="uploadFiles.length">
@@ -25,21 +30,15 @@
         {{ `${index + 1}、${uploadFile.name}` }}
       </div>
     </div>
-
-
-    <!-- <el-table :data="tableData" border stripe class="table" max-height="550">
-                            <el-table-column :prop="column.prop" :label="column.label" width="140" align="center" show-overflow-tooltip
-                              tooltip-effect="dark" v-for="column in columnFiledList"
-                              :fixed="column.prop === 'orderNO' || column.prop === 'number' ? 'left' : column.prop === 'profit' ? 'right' : false"></el-table-column>
-                          </el-table> -->
   </div>
 </template>
 
 <script setup lang="ts" name="import">
-import { ElButton, ElIcon, ElMessage, ElPopover, ElTable, ElTableColumn, ElUpload, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
-import { UploadFilled, Close } from '@element-plus/icons-vue';
+import { ElButton, ElIcon, ElMessage, ElPopover, ElUpload, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
+import { UploadFilled } from '@element-plus/icons-vue';
 import { nextTick, ref } from 'vue';
 import * as XLSX from 'xlsx';
+import { isNumber } from '../utils/types';
 // @ts-ignore
 import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
 const loadingContainer = document.body
@@ -72,11 +71,6 @@ const columnFiledList: { [key: string]: string }[] = [
   { prop: 'salerepositoryrefund', label: '售后仓库退款金额' },
   { prop: 'profit', label: '利润' },
 ]
-// 删除文件
-const removeFile = (filename: string) => {
-  const idx = uploadFiles.value.findIndex(uploadFile => uploadFile.name === filename)
-  uploadFiles.value.splice(idx, 1)
-}
 
 interface TableItem {
   number: number,
@@ -173,10 +167,10 @@ const scrollToDomBottom = () => {
 // 在内存中处理从上次的excel里面读取出来的数据
 let uploadedFileType: string[] = [] //表格的类型列表，付款单，收款单，售后单，源数据，少一个都无法使用生成表格和导出excel功能
 // 各种excel的内存对象数据
-const tempysj: { [key: string]: any } = {}
-const tempfkd: { [key: string]: any } = {}
-const tempskd: { [key: string]: any } = {}
-const tempshd: { [key: string]: any } = {}
+let tempysj: { [key: string]: any } = {}
+let tempfkd: { [key: string]: any } = {}
+let tempskd: { [key: string]: any } = {}
+let tempshd: { [key: string]: any } = {}
 // 用于生成tabledata的中间列表
 const resList = ref<any>([])
 // 重复的订单编号列表
@@ -223,11 +217,11 @@ const httpRequest = async () => {
         cost: item['成本（成本价X数量+供应商运费）'],
         canalcost: item['渠道供货价'],
         salefee: item['销售金额（供货价X数量+运费）'],
-        buytime: item['下单时间'],
-        paytime: item['支付时间'],
+        buytime: isNumber(item['下单时间']) ? formatDate(item['下单时间']) : item['下单时间'],
+        paytime: isNumber(item['支付时间']) ? formatDate(item['支付时间']) : item['支付时间'],
         repositoryname: item['仓库名称'],
-        pushrepositorytime: item['推仓时间'],
-        realtime: item['实际发货时间'],
+        pushrepositorytime: isNumber(item['推仓时间']) ? formatDate(item['推仓时间']) : item['推仓时间'],
+        realtime: isNumber(item['实际发货时间']) ? formatDate(item['实际发货时间']) : item['实际发货时间'],
         transportationexpenses: item['运费'],
         logisticNO: item['物流单号'],
         receiver: item['收件人'],
@@ -324,8 +318,21 @@ const httpRequest = async () => {
   disableGenTable.value = false
   // 重新上传表格后需要重置表格
   tableData.value = []
-
 };
+// 读取excel的日期格式之后数据不是想要的格式，可以通过以下方法来处理
+const formatDate = (numb: number) => {
+  const old = numb - 1;
+  const t = Math.round((old - Math.floor(old)) * 24 * 60 * 60);
+  const time = new Date(1900, 0, old, 0, 0, t)
+  const year = time.getFullYear();
+  const [month, date, hour, minite] = [
+    String(time.getMonth() + 1),
+    String(time.getDate()),
+    String(time.getHours()),
+    String(time.getMinutes()),
+  ].map(timestr => timestr.padStart(2, '0'));
+  return `${year}-${month}-${date} ${hour}:${minite}`
+}
 
 // 大数据情况下模拟分页加载
 const tableData = ref<TableItem[]>([]);
@@ -358,7 +365,7 @@ const genTable = (list: any[]) => {
       // console.log(tableData.value, 'tableData.value')
       geningtable.value = false
       disableGenTable.value = true
-      candownload.value = uploadedFileType.length === 3
+      candownload.value = uploadedFileType.length >= 2
       clearTimeout(timer)
       start = 0;
       offset = 500;
@@ -380,7 +387,7 @@ const exportXlsx = () => {
   if (!uploadedFileType.includes('源数据')) return ElMessage.error('请先上传源数据，否则无法使用功能下载')
 
   const downloadList = [columnFiledList.map(item => { if (item.label !== '序号') { return item.label } }).slice(1)]
-console.log( tableData.value,' tableData.value')
+  console.log(tableData.value, ' tableData.value')
   tableData.value.forEach((item: TableItem) => {
     const arr: any[] = [];
     arr.push(...[
@@ -418,6 +425,24 @@ console.log( tableData.value,' tableData.value')
   XLSX.utils.book_append_sheet(new_workbook, WorkSheet, '第一页');
   XLSX.writeFile(new_workbook, `表格.xlsx`);
 };
+
+// 重置功能
+const reset = () => {
+  candownload.value = false
+  tableData.value = []
+  disableGenTable.value = false
+  geningtable.value = false
+  start = 0;
+  duplicateOrderList.value = []
+  resList.value = []
+  tempysj = {}
+  tempfkd = {}
+  tempskd = {}
+  tempshd = {}
+  uploadedFileType = []
+  importList.value = []
+  uploadFiles.value = []
+}
 </script>
 
 <style scoped lang="less">
