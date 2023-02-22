@@ -49,15 +49,21 @@ const columnFiledList: { [key: string]: string }[] = [
   { prop: 'orderNO', label: '订单编号' },
   { prop: 'name', label: '商品名称' },
   { prop: 'count', label: '商品数量' },
-  { prop: 'canal', label: '渠道' },
-  { prop: 'price', label: '成本单价' },
+  { prop: 'canal', label: '渠道名称' },
+  { prop: 'price', label: '单品成本' },
   { prop: 'cost', label: '成本（成本价X数量+供应商运费）' },
-  { prop: 'canalcost', label: '渠道价格' },
+  { prop: 'canalcost', label: '渠道供货价' },
   { prop: 'salefee', label: '销售金额（供货价X数量+运费）' },
   { prop: 'buytime', label: '下单时间' },
+  { prop: 'paytime', label: '支付时间' },
+  { prop: 'repositoryname', label: '仓库名称' },
+  { prop: 'pushrepositorytime', label: '推仓时间' },
+  { prop: 'realtime', label: '实际发货时间' },
+  { prop: 'transportationexpenses', label: '运费' },
+  { prop: 'logisticNO', label: '物流单号' },
   { prop: 'receiver', label: '收件人' },
-  { prop: 'receiverphone', label: '收件人电话' },
-  { prop: 'receiveraddress', label: '收件人地址' },
+  { prop: 'receiverphone', label: '电话' },
+  { prop: 'receiveraddress', label: '详细地址' },
   { prop: 'productstatus', label: '发货状态' },
   { prop: 'orderstatus', label: '订单状态' },
   { prop: 'shouldpayfee', label: '应付金额' },
@@ -83,6 +89,12 @@ interface TableItem {
   canalcost: string
   salefee: string
   buytime: string
+  paytime: string
+  repositoryname: string
+  pushrepositorytime: string
+  realtime: string
+  transportationexpenses: string
+  logisticNO: string
   receiver: string
   receiverphone: string
   receiveraddress: string
@@ -206,15 +218,21 @@ const httpRequest = async () => {
         orderNO: item['订单编号'],
         name: item['商品名称'],
         count: item['商品数量'],
-        canal: item['渠道'],
-        price: item['成本单价'],
+        canal: item['渠道名称'],
+        price: item['单品成本'],
         cost: item['成本（成本价X数量+供应商运费）'],
-        canalcost: item['渠道价格'],
+        canalcost: item['渠道供货价'],
         salefee: item['销售金额（供货价X数量+运费）'],
         buytime: item['下单时间'],
+        paytime: item['支付时间'],
+        repositoryname: item['仓库名称'],
+        pushrepositorytime: item['推仓时间'],
+        realtime: item['实际发货时间'],
+        transportationexpenses: item['运费'],
+        logisticNO: item['物流单号'],
         receiver: item['收件人'],
-        receiverphone: item['收件人电话'],
-        receiveraddress: item['收件人地址'],
+        receiverphone: item['电话'],
+        receiveraddress: item['详细地址'],
         productstatus: item['发货状态'],
         orderstatus: item['订单状态'],
         shouldpayfee: item['应付金额'],
@@ -362,7 +380,7 @@ const exportXlsx = () => {
   if (!uploadedFileType.includes('源数据')) return ElMessage.error('请先上传源数据，否则无法使用功能下载')
 
   const downloadList = [columnFiledList.map(item => { if (item.label !== '序号') { return item.label } }).slice(1)]
-
+console.log( tableData.value,' tableData.value')
   tableData.value.forEach((item: TableItem) => {
     const arr: any[] = [];
     arr.push(...[
@@ -375,6 +393,12 @@ const exportXlsx = () => {
       item.canalcost,
       item.salefee,
       item.buytime,
+      item.paytime,
+      item.repositoryname,
+      item.pushrepositorytime,
+      item.realtime,
+      item.transportationexpenses,
+      item.logisticNO,
       item.receiver,
       item.receiverphone,
       item.receiveraddress,

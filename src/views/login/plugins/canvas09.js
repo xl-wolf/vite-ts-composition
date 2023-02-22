@@ -280,7 +280,7 @@ function iterate() {
 }
 let animationFrameId
 function render() {
-    console.log('canvas11')
+    console.log('canvas09')
 	iterate()
 
 	//draw point gradient to buffer
