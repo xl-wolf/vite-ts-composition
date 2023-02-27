@@ -11,7 +11,7 @@
           <el-button type="primary" @click="exportXlsx">导出Excel</el-button>
         </template>
       </el-popover>
-      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="只有所有类型的表单都上传成功后才可以生成表格">
+      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="必须上传数据源、收款单、付款单成功后才可以生成表格">
         <template #reference>
           <el-button type="primary" @click="genTable(resList)" :disabled="disableGenTable"
             :loading="geningtable">生成表格</el-button>
@@ -19,7 +19,7 @@
       </el-popover>
       <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="点击清空已上传的文件与已缓存文件">
         <template #reference>
-          <el-button type="primary" @click="reset" :disabled="uploadFiles.length === 0">重新上传</el-button>
+          <el-button type="primary" @click="reset">重新上传</el-button>
         </template>
       </el-popover>
 
@@ -41,6 +41,7 @@ import { ElButton, ElIcon, ElMessage, ElPopover, ElUpload, UploadInstance, Uploa
 import { UploadFilled } from '@element-plus/icons-vue';
 import { nextTick, onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
+import indexDB from '../utils/indexDB'
 import { isNumber } from '../utils/types';
 // @ts-ignore
 import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
@@ -142,9 +143,6 @@ const beforeUpload: UploadProps['beforeUpload'] = async (rawFile: UploadRawFile)
   const { name } = rawFile
   uploadFiles.value.push({ name: name })
   nextTick(scrollToDomBottom)
-  if (enableCache.value) {
-    cacheData()
-  }
   return true;
 };
 // 工具方法用于解析Excel
@@ -247,6 +245,7 @@ const httpRequest = async () => {
   console.log('uploadedFileType', uploadedFileType)
 
   list.forEach((item: any) => {
+    if (!item.orderNO || item.orderNO.trim().slice(0, 1).toUpperCase() !== 'W') { return console.log(`无效订单编号：${item.orderNO}`) }
     if (existOrequalzero(item.shouldpayfee) && item.orderNO) {
       if (!tempfkd[item.orderNO]) {
         if (item.orderNO)
@@ -273,7 +272,6 @@ const httpRequest = async () => {
       }
     }
     else {
-      if (!item.orderNO || item.orderNO.trim().slice(0, 1).toUpperCase() !== 'W') { return console.log(`源数据无效订单编号：${item.orderNO}`) }
       if (!tempysj[item.orderNO]) {
         if (item.orderNO)
           tempysj[item.orderNO] = item
@@ -290,6 +288,9 @@ const httpRequest = async () => {
   // console.log(duplicateOrderList.value, 'duplicateOrderList.value')
 
   ElMessage.success(`上传${ordertype}成功`)
+  // if (enableCache.value) {
+  //   cacheData()
+  // }
   // 全部表单都上传之后才可以允许生成表格
   if (!canGenTable(false)) return
 
@@ -317,8 +318,8 @@ const httpRequest = async () => {
   tmpresList.forEach((item, index) => item.number = index + 1)
   // 把函数内的临时内存数据tmpresList持久化给页面级别的变量resList
   resList.value = tmpresList
-  console.log(resList.value.length, '表格长度')
-  console.log(duplicateOrderList.value.length, '重复订单的数量', duplicateOrderList.value)
+  console.log(`表格长度：${resList.value.length}`)
+  console.log(`重复订单的数量：${duplicateOrderList.value.length}`, duplicateOrderList.value)
   // 此时允许用户生成表格
   disableGenTable.value = false
   // 重新上传表格后需要重置表格
@@ -350,7 +351,7 @@ const canGenTable = (needToast = true) => {
   const allFileType = ['收款单', '付款单', '源数据']
   for (let i = 0; i < allFileType.length; i++) {
     if (!uploadedFileType.includes(allFileType[i])) {
-      needToast && ElMessage.error(`请先上传${allFileType[i]}，否则无法使用生成表格功能！`)
+      needToast && ElMessage.warning(`请先上传${allFileType[i]}，否则无法使用生成表格功能！`)
       return false
     }
   }
@@ -386,13 +387,15 @@ const handleSuccess = () => uploadRef.value!.clearFiles();
 
 // 下载excel的方法
 const candownload = ref(false)
+const downloading = ref(false)
 const exportXlsx = () => {
-  if (geningtable.value) return ElMessage.success('正在努力生成表格，请稍后！')
-  if (!candownload.value) return ElMessage.error('请先生成表格！')
-  if (!uploadedFileType.includes('源数据')) return ElMessage.error('请先上传源数据，否则无法使用功能下载')
+  if (downloading.value) return ElMessage.success('正在导出表格，请稍后！')
+  downloading.value = true
+  if (!candownload.value) return ElMessage.warning('请先生成表格！')
+  if (!uploadedFileType.includes('源数据')) return ElMessage.warning('请先上传源数据，否则无法使用功能下载')
 
   const downloadList = [columnFiledList.map(item => { if (item.label !== '序号') { return item.label } }).slice(1)]
-  console.log(tableData.value, ' tableData.value')
+  // console.log(tableData.value, ' tableData.value')
   tableData.value.forEach((item: TableItem) => {
     const arr: any[] = [];
     arr.push(...[
@@ -429,10 +432,12 @@ const exportXlsx = () => {
   const new_workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(new_workbook, WorkSheet, '第一页');
   XLSX.writeFile(new_workbook, `表格.xlsx`);
+  downloading.value = false
 };
 
 // 重置功能
 const reset = () => {
+  if (uploadFiles.value.length === 0) return ElMessage.warning(`未上传文件时，功能不可用`)
   candownload.value = false
   disableGenTable.value = false
   geningtable.value = false
@@ -447,66 +452,70 @@ const reset = () => {
   uploadedFileType = []
   importList.value = []
   uploadFiles.value = []
-  clearCache()
+  // clearCache()
 }
 
 // 是否启用缓存功能
 const enableCache = ref(false)
 const cacheFunc = () => {
-  enableCache.value = !enableCache.value
-  enableCache.value ? cacheData() : clearCache()
+  return ElMessage.warning('功能优化中，请期待。。。')
+  // enableCache.value = !enableCache.value
+  // enableCache.value ? cacheData() : clearCache()
 }
 
-let storageData: { [key: string]: any } = {}
-const clearCache = () => {
-  enableCache.value = false
-  storageData = {}
-  sessionStorage.clear()
-}
+// let storageData: { [key: string]: any } = {}
+// const clearCache = () => {
+//   enableCache.value = false
+//   storageData = {}
+//   localStorage.removeItem('storageData')
+//   localStorage.removeItem('enableCache')
+// }
 
-const cacheData = () => {
-  storageData['candownload'] = candownload.value
-  storageData['disableGenTable'] = disableGenTable.value
-  storageData['geningtable'] = geningtable.value
-  storageData['tableData'] = tableData.value
-  storageData['start'] = start
-  storageData['duplicateOrderList'] = duplicateOrderList.value
-  storageData['resList'] = resList.value
-  storageData['tempysj'] = tempysj
-  storageData['tempfkd'] = tempfkd
-  storageData['tempskd'] = tempskd
-  storageData['tempshd'] = tempshd
-  storageData['uploadedFileType'] = uploadedFileType
-  storageData['importList'] = importList.value
-  storageData['uploadFiles'] = uploadFiles.value
-  sessionStorage.setItem('storageData', JSON.stringify(storageData))
-  sessionStorage.setItem('enableCache', JSON.stringify(enableCache.value ? 1 : 0))
-}
+// const cacheData = () => {
+//   storageData['candownload'] = candownload.value
+//   storageData['disableGenTable'] = disableGenTable.value
+//   storageData['geningtable'] = geningtable.value
+//   storageData['tableData'] = tableData.value
+//   storageData['start'] = start
+//   storageData['duplicateOrderList'] = duplicateOrderList.value
+//   storageData['resList'] = resList.value
+//   storageData['tempysj'] = tempysj
+//   storageData['tempfkd'] = tempfkd
+//   storageData['tempskd'] = tempskd
+//   storageData['tempshd'] = tempshd
+//   storageData['uploadedFileType'] = uploadedFileType
+//   storageData['importList'] = importList.value
+//   storageData['uploadFiles'] = uploadFiles.value
+//   localStorage.setItem('storageData', JSON.stringify(storageData))
+//   localStorage.setItem('enableCache', JSON.stringify(enableCache.value ? 1 : 0))
+  
+  
+// }
 // 优先从缓存中读取数据
-const getCache = () => {
-  const cache = sessionStorage.getItem('storageData')
-  const sessionenableCache = sessionStorage.getItem('enableCache')
-  if (cache) {
-    enableCache.value = Boolean(sessionenableCache)
-    const storageData = JSON.parse(cache)
-    candownload.value = storageData.candownload
-    disableGenTable.value = storageData.disableGenTable
-    geningtable.value = storageData.geningtable
-    tableData.value = storageData.tableData
-    start = storageData.start
-    duplicateOrderList.value = storageData.duplicateOrderList
-    resList.value = storageData.resList
-    tempysj = storageData.tempysj
-    tempfkd = storageData.tempfkd
-    tempskd = storageData.tempskd
-    tempshd = storageData.tempshd
-    uploadedFileType = storageData.uploadedFileType
-    importList.value = storageData.importList
-    uploadFiles.value = storageData.uploadFiles
-  }
-}
+// const getCache = () => {
+//   const cache = localStorage.getItem('storageData')
+//   const sessionenableCache = localStorage.getItem('enableCache')
+//   if (cache) {
+//     enableCache.value = Boolean(sessionenableCache)
+//     const storageData = JSON.parse(cache)
+//     candownload.value = storageData.candownload
+//     disableGenTable.value = storageData.disableGenTable
+//     geningtable.value = storageData.geningtable
+//     tableData.value = storageData.tableData
+//     start = storageData.start
+//     duplicateOrderList.value = storageData.duplicateOrderList
+//     resList.value = storageData.resList
+//     tempysj = storageData.tempysj
+//     tempfkd = storageData.tempfkd
+//     tempskd = storageData.tempskd
+//     tempshd = storageData.tempshd
+//     uploadedFileType = storageData.uploadedFileType
+//     importList.value = storageData.importList
+//     uploadFiles.value = storageData.uploadFiles
+//   }
+// }
 
-onMounted(getCache)
+// onMounted(getCache)
 </script>
 
 <style scoped lang="less">
