@@ -41,7 +41,6 @@ import { ElButton, ElIcon, ElMessage, ElPopover, ElUpload, UploadInstance, Uploa
 import { UploadFilled } from '@element-plus/icons-vue';
 import { nextTick, onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
-import indexDB from '../utils/indexDB'
 import { isNumber } from '../utils/types';
 // @ts-ignore
 import { showLoading, hideLoading } from "@/assets/js/MagicLoading.js"
