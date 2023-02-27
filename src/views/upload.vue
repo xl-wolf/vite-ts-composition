@@ -17,11 +17,14 @@
             :loading="geningtable">生成表格</el-button>
         </template>
       </el-popover>
-      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="点击清空已上传的文件">
+      <el-popover placement="top-start" title="提示" :width="200" trigger="hover" content="点击清空已上传的文件与已缓存文件">
         <template #reference>
           <el-button type="primary" @click="reset" :disabled="uploadFiles.length === 0">重新上传</el-button>
         </template>
       </el-popover>
+
+      <el-button type="primary" @click="cacheFunc">{{ enableCache ? '清空缓存' : '启用缓存' }}</el-button>
+
     </div>
 
     <div class="upload-file-list" v-if="uploadFiles.length">
@@ -36,7 +39,7 @@
 <script setup lang="ts" name="import">
 import { ElButton, ElIcon, ElMessage, ElPopover, ElUpload, UploadInstance, UploadProps, UploadRawFile } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
-import { nextTick, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 import * as XLSX from 'xlsx';
 import { isNumber } from '../utils/types';
 // @ts-ignore
@@ -102,14 +105,14 @@ interface TableItem {
 }
 
 const canUploadFile = (file: UploadRawFile) => {
-  const fileSizeLimit = 20
+  const fileSizeLimit = 100
   if (file.size / 1024 / 1024 > fileSizeLimit) {
     return {
       status: false,
       msg: `文件大小不能超过${fileSizeLimit}MB！`
     }
   }
-  if (uploadFiles.value.some((uploadedfile: UploadRawFile) => file.name === uploadedfile.name)) {
+  if (uploadFiles.value.some((uploadedfile) => file.name === uploadedfile.name)) {
     return {
       status: false,
       msg: `${file.name}已上传过！`
@@ -122,13 +125,12 @@ const canUploadFile = (file: UploadRawFile) => {
   }
 }
 const importList = ref<any>([]);
-const uploadFiles = ref<UploadRawFile[]>([])
+const uploadFiles = ref<{ name: string }[]>([])
 
 // 文件上传前的校验
 const beforeUpload: UploadProps['beforeUpload'] = async (rawFile: UploadRawFile) => {
   // 未通过校验则弹窗提示
   const { status, msg } = canUploadFile(rawFile)
-
   if (!status) {
     ElMessage.warning(msg)
     return false
@@ -137,9 +139,12 @@ const beforeUpload: UploadProps['beforeUpload'] = async (rawFile: UploadRawFile)
   // 校验通过后的操作
   importList.value = await analysisExcel(rawFile);
   hideLoading(loadingContainer)
-  uploadFiles.value.push(rawFile)
+  const { name } = rawFile
+  uploadFiles.value.push({ name: name })
   nextTick(scrollToDomBottom)
-
+  if (enableCache.value) {
+    cacheData()
+  }
   return true;
 };
 // 工具方法用于解析Excel
@@ -176,7 +181,7 @@ const resList = ref<any>([])
 // 重复的订单编号列表
 const duplicateOrderList = ref<any>([])
 const httpRequest = async () => {
-  const rowLimit = 100000
+  const rowLimit = 500000
   if (importList.value.length > rowLimit) return ElMessage.warning(`表格数据不得多于${rowLimit}条`)
 
   const existOrequalzero = (data: number) => data === 0 || data
@@ -429,9 +434,9 @@ const exportXlsx = () => {
 // 重置功能
 const reset = () => {
   candownload.value = false
-  tableData.value = []
   disableGenTable.value = false
   geningtable.value = false
+  tableData.value = []
   start = 0;
   duplicateOrderList.value = []
   resList.value = []
@@ -442,7 +447,66 @@ const reset = () => {
   uploadedFileType = []
   importList.value = []
   uploadFiles.value = []
+  clearCache()
 }
+
+// 是否启用缓存功能
+const enableCache = ref(false)
+const cacheFunc = () => {
+  enableCache.value = !enableCache.value
+  enableCache.value ? cacheData() : clearCache()
+}
+
+let storageData: { [key: string]: any } = {}
+const clearCache = () => {
+  enableCache.value = false
+  storageData = {}
+  sessionStorage.clear()
+}
+
+const cacheData = () => {
+  storageData['candownload'] = candownload.value
+  storageData['disableGenTable'] = disableGenTable.value
+  storageData['geningtable'] = geningtable.value
+  storageData['tableData'] = tableData.value
+  storageData['start'] = start
+  storageData['duplicateOrderList'] = duplicateOrderList.value
+  storageData['resList'] = resList.value
+  storageData['tempysj'] = tempysj
+  storageData['tempfkd'] = tempfkd
+  storageData['tempskd'] = tempskd
+  storageData['tempshd'] = tempshd
+  storageData['uploadedFileType'] = uploadedFileType
+  storageData['importList'] = importList.value
+  storageData['uploadFiles'] = uploadFiles.value
+  sessionStorage.setItem('storageData', JSON.stringify(storageData))
+  sessionStorage.setItem('enableCache', JSON.stringify(enableCache.value ? 1 : 0))
+}
+// 优先从缓存中读取数据
+const getCache = () => {
+  const cache = sessionStorage.getItem('storageData')
+  const sessionenableCache = sessionStorage.getItem('enableCache')
+  if (cache) {
+    enableCache.value = Boolean(sessionenableCache)
+    const storageData = JSON.parse(cache)
+    candownload.value = storageData.candownload
+    disableGenTable.value = storageData.disableGenTable
+    geningtable.value = storageData.geningtable
+    tableData.value = storageData.tableData
+    start = storageData.start
+    duplicateOrderList.value = storageData.duplicateOrderList
+    resList.value = storageData.resList
+    tempysj = storageData.tempysj
+    tempfkd = storageData.tempfkd
+    tempskd = storageData.tempskd
+    tempshd = storageData.tempshd
+    uploadedFileType = storageData.uploadedFileType
+    importList.value = storageData.importList
+    uploadFiles.value = storageData.uploadFiles
+  }
+}
+
+onMounted(getCache)
 </script>
 
 <style scoped lang="less">
