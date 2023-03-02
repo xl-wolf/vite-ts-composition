@@ -250,7 +250,7 @@ const httpRequest = async () => {
         if (item.orderNO)
           tempfkd[item.orderNO] = item.shouldpayfee
       } else {
-        duplicateOrderList.value.push({ '付款单': item.orderNO })
+        duplicateOrderList.value.push({ '付款单': item.orderNO,"应付金额":item.shouldpayfee })
       }
     }
     else if (existOrequalzero(item.shouldgetfee) && item.orderNO) {
@@ -259,7 +259,7 @@ const httpRequest = async () => {
           if (item.orderNO)
             tempskd[item.orderNO] = item.shouldgetfee
       } else {
-        duplicateOrderList.value.push({ '收款单': item.orderNO })
+        duplicateOrderList.value.push({ '收款单': item.orderNO,"应收金额":item.shouldgetfee })
       }
     }
     else if (existOrequalzero(item.salecanalrefund) && existOrequalzero(item.salerepositoryrefund) && item.orderNO) {
@@ -267,7 +267,7 @@ const httpRequest = async () => {
         if (item.orderNO)
           tempshd[item.orderNO] = `售后渠道退款金额${item.salecanalrefund}售后仓库退款金额${item.salerepositoryrefund}`
       } else {
-        duplicateOrderList.value.push({ '售后单': item.orderNO })
+        duplicateOrderList.value.push({ '售后单': item.orderNO,'售后渠道退款金额':item.salecanalrefund,"售后仓库退款金额":item.salerepositoryrefund })
       }
     }
     else {
@@ -309,7 +309,16 @@ const httpRequest = async () => {
     }
     tmpresList.push(item)
   })
-  duplicateOrderList.value.forEach((duplicateOrder: any) => tmpresList.push({ orderNO: Object.values(duplicateOrder)[0] }))
+  duplicateOrderList.value.forEach((duplicateOrder: any) => {
+    const type = Object.keys(duplicateOrder)[0]
+    if(type === '收款单'){
+      tmpresList.push({ orderNO: Object.values(duplicateOrder)[0],shouldgetfee:Object.values(duplicateOrder)[1] })
+    }else if(type === '付款单'){
+      tmpresList.push({ orderNO: Object.values(duplicateOrder)[0],shouldpayfee:Object.values(duplicateOrder)[1] })
+    }else if(type === '售后单'){
+      tmpresList.push({ orderNO: Object.values(duplicateOrder)[0],salecanalrefund:Object.values(duplicateOrder)[1] ,salerepositoryrefund:Object.values(duplicateOrder)[2]})
+    }
+    })
   // console.log(tmpresList, 'tmpresList')
   // 根据订单编号给表格排序
   tmpresList.sort((a, b) => a.orderNO.slice(1) - b.orderNO.slice(1))

@@ -46,12 +46,22 @@ const permiss = usePermissStore();
 const submitForm = () => {
   if (!loginInfo.userName || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
   loginApi(loginInfo).then((res) => {
-    ElMessage.success('登录成功');
-    localStorage.setItem('ms_username', loginInfo.userName);
-    const keys = permiss.defaultList[loginInfo.userName === 'root' ? 'admin' : 'user'];
-    permiss.handleSet(keys);
-    localStorage.setItem('ms_keys', JSON.stringify(keys));
-    router.push(res.data.success ? '/' : '/upload');
+    const response = res.data
+    if (response.success) {
+      ElMessage.success('登录成功');
+      localStorage.setItem('ms_username', loginInfo.userName);
+      const keys = permiss.defaultList[loginInfo.userName === 'root' ? 'admin' : 'user'];
+      permiss.handleSet(keys);
+      localStorage.setItem('ms_keys', JSON.stringify(keys));
+      if (response.data.name === 'hq') {
+        router.push('/upload');
+      } else {
+        router.push('/');
+      }
+    } else {
+      ElMessage.error('登录失败，用户名或密码不正确~');
+    }
+
   }).catch(err => {
     ElMessage.error('登录失败');
     console.log(err)
