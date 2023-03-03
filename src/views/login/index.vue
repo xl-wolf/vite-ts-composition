@@ -33,6 +33,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Lock, User } from '@element-plus/icons-vue';
 import { LoginInfo, loginApi } from '../../api/user';
+import asyncAMapLoader from '../../utils/asyncAMapLoader';
 
 
 const loginInfo = reactive<LoginInfo>({
@@ -42,6 +43,49 @@ const loginInfo = reactive<LoginInfo>({
 
 const router = useRouter();
 const permiss = usePermissStore();
+// @ts-ignore
+// 浏览器获取当前定位
+const getCurrentPosition = (AMap: any) => {
+  return new Promise((resolve: (params: any, signal: string) => void, reject: (params: any, signal: string) => void) => {
+    const geolocation = new AMap.Geolocation({
+      enableHighAccuracy: false, //是否使用高精度定位，默认:true
+      timeout: 20000, //超过20秒后停止定位，默认：5s
+    })
+    geolocation.getCurrentPosition(function (status: any, result: any) {
+      if (status === "complete") {
+        console.log(result, "success")
+        resolve(result, "success")
+      } else {
+        console.log(result, "fail")
+        reject(result, "fail")
+      }
+    })
+  })
+}
+
+
+const getIpAndAddressSohu = () => {
+  asyncAMapLoader().then(
+    (mapRes: any) => {
+      console.log(mapRes)
+      // this.initMap()
+      getCurrentPosition(mapRes.AMap).then(() => {
+        console.log("获取定位成功")
+      }).catch(() => {
+        console.log("获取定位失败")
+      })
+    },
+    (err) => {
+      console.log("AMap加载失败", err)
+      ElMessage.error("AMap加载失败")
+    }
+  )
+
+
+}
+onMounted(
+  getIpAndAddressSohu
+)
 
 const submitForm = () => {
   if (!loginInfo.userName || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
@@ -53,13 +97,14 @@ const submitForm = () => {
       const keys = permiss.defaultList[loginInfo.userName === 'root' ? 'admin' : 'user'];
       permiss.handleSet(keys);
       localStorage.setItem('ms_keys', JSON.stringify(keys));
+      // localStorage.setItem('lastLoginInfo', JSON.stringify({time:Date.now(),location:}));
       if (response.data.name === 'hq') {
         router.push('/upload');
       } else {
         router.push('/');
       }
     } else {
-      ElMessage.error('登录失败，用户名或密码不正确~');
+      ElMessage.error(response.msg);
     }
 
   }).catch(err => {
@@ -80,6 +125,7 @@ const setCanvasBg = () => {
   })
 }
 onMounted(setCanvasBg)
+
 onUnmounted(() => clearRef.value())
 
 </script>

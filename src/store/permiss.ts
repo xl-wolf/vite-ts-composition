@@ -6,7 +6,7 @@ interface ObjectList {
 }
 const adminList = pagePermission.map(pagecfg => pagecfg.permiss)
 // 没权限的页面需要设成空字符串方便设置权限
-const userPermissConfig = ['文件上传']
+const userPermissConfig = ['系统首页', '文件上传']
 const userList = adminList.map(permiss => {
   if (userPermissConfig.indexOf(permiss) === -1) { return '' }
   return permiss
