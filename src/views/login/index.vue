@@ -63,7 +63,6 @@ const getCurrentPosition = (AMap: any) => {
   })
 }
 
-
 const getIpAndAddressSohu = () => {
   asyncAMapLoader().then(
     (mapRes: any) => {
@@ -80,12 +79,8 @@ const getIpAndAddressSohu = () => {
       ElMessage.error("AMap加载失败")
     }
   )
-
-
 }
-onMounted(
-  getIpAndAddressSohu
-)
+onMounted(getIpAndAddressSohu)
 
 const submitForm = () => {
   if (!loginInfo.userName || !loginInfo.password) return ElMessage.error('用户名和密码不能为空');
@@ -119,7 +114,7 @@ tags.clearTags();
 const clearRef = ref()
 const setCanvasBg = () => {
   // @ts-ignore
-  import("./plugins/canvas13.js").then(({ drawCanvas, clearFunc }) => {
+  import("./plugins/svg01.js").then(({ drawCanvas, clearFunc }) => {
     clearRef.value = clearFunc
     drawCanvas("form-bg")
   })
